@@ -20,6 +20,7 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirm) { setError('Completa todos los campos.'); return; }
+    if (name.trim().length < 3) { setError('El nombre debe tener al menos 3 caracteres.'); return; }
     if (password.length < 6) { setError('La contraseña debe tener mínimo 6 caracteres.'); return; }
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return; }
     setLoading(true); setError('');

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Dimensions, Animated, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Platform, ActivityIndicator } from 'react-native';
 import { Asset } from 'expo-asset';
 import { colors } from '../theme/colors';
 
@@ -11,6 +11,7 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 export default function CustomSplashScreen({ onFinish }: { onFinish: () => void }) {
   // 1. Estados de control estrictos
   const [isAppReady, setIsAppReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Valores de animación
   const circleScale = useRef(new Animated.Value(0)).current;
@@ -20,24 +21,27 @@ export default function CustomSplashScreen({ onFinish }: { onFinish: () => void 
   const rotacionGlobal = useRef(new Animated.Value(0)).current;
 
   // 2. PRECARGA DE IMÁGENES (La magia de Expo)
-  useEffect(() => {
-    async function preloadAssets() {
-      try {
-        // Obligamos al sistema a meter estos archivos pesados en la caché
-        await Asset.loadAsync([
-          require('../../assets/circulo_base.png'),
-          require('../../assets/inter_amarilla.png'),
-          require('../../assets/inter_azul.png'),
-          require('../../assets/inter_roja.png'),
-        ]);
-      } catch (e) {
-        console.warn('Error cargando assets:', e);
-      } finally {
-        // Solo cuando la promesa se resuelve, le decimos a la UI que está lista
+  const preloadAssets = async () => {
+    try {
+      // Obligamos al sistema a meter estos archivos pesados en la caché
+      await Asset.loadAsync([
+        require('../../assets/circulo_base.png'),
+        require('../../assets/inter_amarilla.png'),
+        require('../../assets/inter_azul.png'),
+        require('../../assets/inter_roja.png'),
+      ]);
+    } catch (e) {
+      console.warn('Error cargando assets:', e);
+      setHasError(true);
+    } finally {
+      // Solo cuando la promesa se resuelve, le decimos a la UI que está lista
+      if (!hasError) {
         setIsAppReady(true);
       }
     }
+  };
 
+  useEffect(() => {
     preloadAssets();
   }, []);
 
@@ -97,7 +101,7 @@ export default function CustomSplashScreen({ onFinish }: { onFinish: () => void 
   });
 
   // 4. MIENTRAS CARGA: Mostramos un loader o fondo negro
-  if (!isAppReady) {
+  if (!isAppReady && !hasError) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={colors.amarillo || '#FFD700'} />
@@ -105,7 +109,19 @@ export default function CustomSplashScreen({ onFinish }: { onFinish: () => void 
     );
   }
 
-  // 5. RENDERIZADO FINAL: Ya está todo en memoria
+  // 5. MANEJO DE ERROR
+  if (hasError) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Error cargando recursos de la aplicación.</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => { setHasError(false); preloadAssets(); }}>
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // 6. RENDERIZADO FINAL: Ya está todo en memoria
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
@@ -156,5 +172,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
+  },
+  errorText: {
+    color: colors.error || '#FF3B30',
+    fontSize: 16,
+    fontFamily: 'System',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.azul || '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.textPrimary || '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'System',
+    fontWeight: '600',
   },
 });
