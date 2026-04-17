@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Trivias Venezuela",
+    "slug": "trivias-venezuela",
+    "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "orientation": "portrait",
+    "icon": "./assets/logo de trivias.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo de trivias.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trivias.venezuela",
+      "infoPlist": {
+        "UIStatusBarHidden": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo de trivias.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.trivias.venezuela"
+    },
+    "androidStatusBar": {
+      "hidden": true
+    },
+    "androidNavigationBar": {
+      "visible": "immersive"
+    },
+    "web": {
+      "favicon": "./assets/logo de trivias.png",
+      "bundler": "metro",
+      "name": "Trivias Venezuela"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
