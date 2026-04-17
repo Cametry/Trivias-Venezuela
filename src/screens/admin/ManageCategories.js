@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, Alert, Modal, ActivityIndicator,
 } from 'react-native';
-import { getCategories, saveCategory, deleteCategory } from '../../services/storage';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { colors, fonts, spacing, radius, categoryColors } from '../../theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,8 +21,15 @@ export default function ManageCategories({ navigation }) {
   useEffect(() => { load(); }, []);
 
   const load = async () => {
-    setCats(await getCategories());
-    setLoading(false);
+    try {
+      const snapshot = await getDocs(collection(db, 'categories'));
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCats(cats);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openNew = () => {
@@ -38,15 +46,30 @@ export default function ManageCategories({ navigation }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { Alert.alert('Error', 'El nombre es requerido.'); return; }
-    await saveCategory(editing ? { ...editing, ...form } : form);
-    setModal(false);
-    load();
+    try {
+      const id = editing ? editing.id : `cat_${Date.now()}`;
+      const categoryData = { name: form.name.trim(), icon: form.icon, color: form.color };
+      await setDoc(doc(db, 'categories', id), categoryData);
+      setModal(false);
+      load();
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo guardar la categoría: ' + error.message);
+    }
   };
 
   const handleDelete = (cat) => {
     Alert.alert('Eliminar', `¿Eliminar "${cat.name}"?`, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: async () => { await deleteCategory(cat.id); load(); } },
+      {
+        text: 'Eliminar', style: 'destructive', onPress: async () => {
+          try {
+            await deleteDoc(doc(db, 'categories', cat.id));
+            load();
+          } catch (error) {
+            Alert.alert('Error', 'No se pudo eliminar: ' + error.message);
+          }
+        }
+      },
     ]);
   };
 

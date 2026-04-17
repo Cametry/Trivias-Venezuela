@@ -3,8 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, RefreshControl
 } from 'react-native';
-import { getCategories } from '../../services/storage';
-import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { colors, fonts, spacing, radius, levelColors } from '../../theme/colors';
 import { LEVEL_LABELS, LEVELS } from '../../utils/levels';
@@ -24,7 +23,9 @@ export default function ManageQuestions({ navigation }) {
 
   const init = async () => {
     try {
-      const cats = await getCategories();
+      // Cargar categorías desde Firestore
+      const catsSnapshot = await getDocs(collection(db, 'categories'));
+      const cats = catsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCategories(cats);
 
       if (unsubscribeSnap) unsubscribeSnap();

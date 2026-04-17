@@ -7,8 +7,6 @@ import * as NavigationBar from 'expo-navigation-bar';
 
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { isSeeded, seedData } from './src/services/storage';
-import { SEED_CATEGORIES } from './src/data/seedQuestions';
 import { colors } from './src/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -26,13 +24,9 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Auto-seed on first launch (solo categorías)
-        const seeded = await isSeeded();
-        if (!seeded) {
-          await seedData(SEED_CATEGORIES);
-        }
+        // No más seed local, las categorías están en Firestore
       } catch (e) {
-        console.warn('Seed error:', e);
+        console.warn('Prepare error:', e);
       } finally {
         setAppReady(true);
       }

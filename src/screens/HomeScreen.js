@@ -6,11 +6,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { getCategories } from '../services/storage';
 import { colors, fonts, spacing, radius, categoryColors, levelColors } from '../theme/colors';
 import { LEVEL_LABELS, getLevelFromCorrect, getQuestionsInLevel, QUESTIONS_PER_LEVEL } from '../utils/levels';
 
@@ -125,9 +124,15 @@ export default function HomeScreen({ navigation }) {
   const [notifVisible, setNotifVisible] = useState(false);
 
   const load = useCallback(async () => {
-    const cats = await getCategories();
-    setCategories(cats);
-    setLoading(false);
+    try {
+      const snapshot = await getDocs(collection(db, 'categories'));
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCategories(cats);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -157,10 +162,10 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.root}>
       {/* El paddingTop va SOLO en el ScoreBar (header), no en el root */}
-      <ScoreBar 
-        user={user} 
-        paddingTop={insets.top + 10} 
-        pendingRequests={pendingRequests} 
+      <ScoreBar
+        user={user}
+        paddingTop={insets.top + 10}
+        pendingRequests={pendingRequests}
         onOpenMenu={() => setMenuVisible(true)}
         onOpenNotifications={() => setNotifVisible(true)}
       />
@@ -184,7 +189,7 @@ export default function HomeScreen({ navigation }) {
 
         {!loading && (
           <View style={{ marginTop: Platform.OS === 'web' ? 25 : (Platform.OS === 'android' ? -15 : 15) }}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={{ backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.amarillo + '55', flexDirection: 'row', alignItems: 'center' }}
               onPress={() => startGame({ id: 'all', name: 'De todo un poco', icon: '🎲' })}
             >
@@ -203,7 +208,7 @@ export default function HomeScreen({ navigation }) {
         <View style={[styles.drawerHeader, { paddingTop: Platform.OS === 'web' ? 30 : insets.top + 10 }]}>
           <Text style={styles.drawerTitle}>Menú</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.drawerItem}
           onPress={() => {
             setMenuVisible(false);
@@ -221,7 +226,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.drawerTitle}>Notificaciones</Text>
         </View>
         {pendingRequests > 0 ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.notifCard}
             onPress={() => {
               setNotifVisible(false);
@@ -262,7 +267,7 @@ const styles = StyleSheet.create({
   scoreRight: { flexDirection: 'row', gap: 15, alignItems: 'center', justifyContent: 'flex-end', flex: 1 },
   iconBtn: { padding: 4, position: 'relative' },
   notificationBadge: {
-    position: 'absolute', top: -5, right: -5, width: 18, height: 18, 
+    position: 'absolute', top: -5, right: -5, width: 18, height: 18,
     borderRadius: 9, backgroundColor: colors.rojo, justifyContent: 'center', alignItems: 'center',
   },
   notificationText: { color: '#fff', fontSize: 10, fontFamily: fonts.bold },

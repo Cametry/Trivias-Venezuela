@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const KEYS = {
   USERS: '@tv_users',
   CURRENT_USER: '@tv_current_user',
-  CATEGORIES: '@tv_categories',
-  SEEDED: '@tv_seeded',
+  // CATEGORIES y SEEDED ya no se usan (migradas a Firestore)
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -112,33 +111,26 @@ export async function getAllUsers() {
 }
 
 // ─── Categories ──────────────────────────────────────────────────────────────
+// Las categorías ahora están en Firestore, estas funciones ya no se usan.
+// Se mantienen vacías para evitar errores en componentes que aún las importen
+// (pero ya fueron reemplazadas por Firestore en HomeScreen y ManageCategories).
 export async function getCategories() {
-  return getJSON(KEYS.CATEGORIES, []);
+  console.warn('getCategories() está obsoleta, usa Firestore');
+  return [];
 }
 
 export async function saveCategory(category) {
-  const cats = await getCategories();
-  if (category.id) {
-    const idx = cats.findIndex(c => c.id === category.id);
-    if (idx !== -1) cats[idx] = category;
-    else cats.push(category);
-  } else {
-    cats.push({ ...category, id: generateId() });
-  }
-  await setJSON(KEYS.CATEGORIES, cats);
-  return cats;
+  console.warn('saveCategory() está obsoleta, usa Firestore');
 }
 
 export async function deleteCategory(id) {
-  const cats = await getCategories();
-  await setJSON(KEYS.CATEGORIES, cats.filter(c => c.id !== id));
+  console.warn('deleteCategory() está obsoleta, usa Firestore');
 }
 
 export async function isSeeded() {
-  return getJSON(KEYS.SEEDED, false);
+  return true; // Ya no se necesita seed local
 }
 
 export async function seedData(categories) {
-  await setJSON(KEYS.CATEGORIES, categories);
-  await setJSON(KEYS.SEEDED, true);
+  console.warn('seedData() está obsoleta, las categorías están en Firestore');
 }

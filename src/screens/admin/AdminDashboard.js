@@ -6,7 +6,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
-import { getCategories } from '../../services/storage';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { colors, fonts, spacing, radius } from '../../theme/colors';
@@ -22,9 +21,9 @@ export default function AdminDashboard({ navigation }) {
 
   const loadStats = async () => {
     try {
-      const cats = await getCategories();
+      const catsSnap = await getDocs(collection(db, 'categories'));
       const qsSnap = await getDocs(collection(db, 'questions'));
-      setStats({ categories: cats.length, questions: qsSnap.size });
+      setStats({ categories: catsSnap.size, questions: qsSnap.size });
     } catch (e) {
       console.warn('Error loadStats', e);
     } finally {
@@ -37,6 +36,7 @@ export default function AdminDashboard({ navigation }) {
     setRefreshing(true);
     loadStats();
   };
+
 
   const menuItems = [
     { label: '📂 Categorías', sub: `${stats.categories} categorías`, screen: 'ManageCategories', color: colors.azul },
@@ -98,6 +98,7 @@ export default function AdminDashboard({ navigation }) {
                 <Text style={styles.menuArrow}>›</Text>
               </TouchableOpacity>
             ))}
+
           </>
         )}
       </ScrollView>
