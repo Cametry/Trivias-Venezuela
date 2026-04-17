@@ -4,7 +4,6 @@ const KEYS = {
   USERS: '@tv_users',
   CURRENT_USER: '@tv_current_user',
   CATEGORIES: '@tv_categories',
-  QUESTIONS: '@tv_questions',
   SEEDED: '@tv_seeded',
 };
 
@@ -135,38 +134,11 @@ export async function deleteCategory(id) {
   await setJSON(KEYS.CATEGORIES, cats.filter(c => c.id !== id));
 }
 
-// ─── Questions ───────────────────────────────────────────────────────────────
-export async function getQuestions(filters = {}) {
-  let questions = await getJSON(KEYS.QUESTIONS, []);
-  if (filters.categoryId) questions = questions.filter(q => q.categoryId === filters.categoryId);
-  if (filters.level) questions = questions.filter(q => q.level === filters.level);
-  return questions;
-}
-
-export async function saveQuestion(question) {
-  const questions = await getJSON(KEYS.QUESTIONS, []);
-  if (question.id) {
-    const idx = questions.findIndex(q => q.id === question.id);
-    if (idx !== -1) questions[idx] = question;
-    else questions.push(question);
-  } else {
-    questions.push({ ...question, id: generateId(), imageUrl: question.imageUrl || null });
-  }
-  await setJSON(KEYS.QUESTIONS, questions);
-  return questions;
-}
-
-export async function deleteQuestion(id) {
-  const questions = await getJSON(KEYS.QUESTIONS, []);
-  await setJSON(KEYS.QUESTIONS, questions.filter(q => q.id !== id));
-}
-
 export async function isSeeded() {
   return getJSON(KEYS.SEEDED, false);
 }
 
-export async function seedData(categories, questions) {
+export async function seedData(categories) {
   await setJSON(KEYS.CATEGORIES, categories);
-  await setJSON(KEYS.QUESTIONS, questions);
   await setJSON(KEYS.SEEDED, true);
 }
