@@ -5,7 +5,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { collection, getDocs, orderBy, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, where, doc, getDoc, documentId } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { colors, fonts, spacing, radius, levelColors } from '../theme/colors';
@@ -40,27 +40,50 @@ export default function LeaderboardScreen() {
           setLoading(false);
           return;
         }
-        
-        const qReq = query(collection(db, 'friendships'), where('requesterId', '==', user.uid), where('status', '==', 'accepted'));
-        const qRec = query(collection(db, 'friendships'), where('receiverId', '==', user.uid), where('status', '==', 'accepted'));
-        const [snapReq, snapRec] = await Promise.all([getDocs(qReq), getDocs(qRec)]);
-        
-        const friendIds = new Set();
-        friendIds.add(user.uid);
-        
-        snapReq.docs.forEach(d => friendIds.add(d.data().receiverId));
-        snapRec.docs.forEach(d => friendIds.add(d.data().requesterId));
-        
-        const idsArray = Array.from(friendIds);
-        const userDocs = await Promise.all(idsArray.map(id => getDoc(doc(db, 'users', id))));
-        
-        const all = userDocs
-          .filter(d => d.exists())
-          .map(d => ({ uid: d.id, ...d.data() }))
-          .filter(u => !u.isAdmin && u.role !== 'admin')
-          .sort((a, b) => (b.points || 0) - (a.points || 0));
-          
-        setUsers(all);
+
+        // Obtener el documento del usuario actual y su array friends (con fallback)
+        const currentUserRef = doc(db, 'users', user.uid);
+        const currentUserSnap = await getDoc(currentUserRef);
+        if (!currentUserSnap.exists()) {
+          setUsers([]);
+          return;
+        }
+        const currentUserData = currentUserSnap.data();
+        const friendsArray = currentUserData.friends || [];
+
+        // Si no tiene amigos, incluir solo al usuario actual
+        const idsToFetch = [user.uid, ...friendsArray];
+
+        if (idsToFetch.length === 1) {
+          // Solo el usuario actual
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const all = userDoc.exists()
+            ? [{ uid: userDoc.id, ...userDoc.data() }].filter(u => u.role !== 'admin' && !u.isAdmin)
+            : [];
+          setUsers(all);
+          return;
+        }
+
+        // Dividir en chunks de 30 (límite de Firebase 'in')
+        const chunkSize = 30;
+        const chunks = [];
+        for (let i = 0; i < idsToFetch.length; i += chunkSize) {
+          chunks.push(idsToFetch.slice(i, i + chunkSize));
+        }
+
+        const allUsers = [];
+        for (const chunk of chunks) {
+          const q = query(collection(db, 'users'), where(documentId(), 'in', chunk));
+          const snapshot = await getDocs(q);
+          snapshot.forEach(docSnap => {
+            allUsers.push({ uid: docSnap.id, ...docSnap.data() });
+          });
+        }
+
+        // Filtrar admins, agregar usuario actual si no está incluido, ordenar por puntos
+        const filtered = allUsers.filter(u => u.role !== 'admin' && !u.isAdmin);
+        const sorted = filtered.sort((a, b) => (b.points || 0) - (a.points || 0));
+        setUsers(sorted);
       }
     } catch (e) {
       console.error('Error cargando ranking:', e);
@@ -129,7 +152,7 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.headerSub}>Los mejores trivieros venezolanos</Text>
-        
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 15, marginBottom: 5 }}>
           {categories.map(cat => (
             <TouchableOpacity

@@ -69,6 +69,7 @@ export function AuthProvider({ children }) {
         points: 0,
         level: 'basico',
         questionsAnswered: 0,
+        friends: [],
         createdAt: new Date(),
       });
 

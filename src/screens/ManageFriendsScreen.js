@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../config/firebase';
-import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, deleteDoc, arrayUnion, documentId } from 'firebase/firestore';
 import { colors, fonts, spacing, radius } from '../theme/colors';
 
 // Tab 1: Lista de Amigos
@@ -20,27 +20,46 @@ function FriendsList() {
     const fetchFriends = async () => {
       setLoading(true);
       try {
-        const q1 = query(collection(db, 'friendships'), where('requesterId', '==', uid), where('status', '==', 'accepted'));
-        const q2 = query(collection(db, 'friendships'), where('receiverId', '==', uid), where('status', '==', 'accepted'));
+        // Obtener el documento del usuario actual para extraer su array friends
+        const userDocRef = doc(db, 'users', uid);
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) {
+          setFriends([]);
+          return;
+        }
+        const userData = userSnap.data();
+        const friendsArray = userData.friends || [];
 
-        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-        const allDocs = [...snap1.docs, ...snap2.docs];
+        if (friendsArray.length === 0) {
+          setFriends([]);
+          return;
+        }
 
-        const friendsData = await Promise.all(
-          allDocs.map(async (friendDoc) => {
-            const data = friendDoc.data();
-            const friendId = data.requesterId === uid ? data.receiverId : data.requesterId;
-            const userDocRef = doc(db, 'users', friendId);
-            const userSnap = await getDoc(userDocRef);
+        // La cláusula 'in' soporta máximo 30 elementos, dividir en chunks si es necesario
+        const chunkSize = 30;
+        const chunks = [];
+        for (let i = 0; i < friendsArray.length; i += chunkSize) {
+          chunks.push(friendsArray.slice(i, i + chunkSize));
+        }
 
-            return {
-              id: friendDoc.id,
-              ...data,
-              user: userSnap.exists() ? { id: friendId, ...userSnap.data() } : null
-            };
-          })
-        );
-        setFriends(friendsData.filter(f => f.user));
+        const allUsers = [];
+        for (const chunk of chunks) {
+          const q = query(collection(db, 'users'), where(documentId(), 'in', chunk));
+          const snapshot = await getDocs(q);
+          snapshot.forEach(docSnap => {
+            allUsers.push({ id: docSnap.id, ...docSnap.data() });
+          });
+        }
+
+        // Mapear a la estructura esperada por el componente
+        const friendsData = allUsers.map(user => ({
+          id: user.id, // usar el ID del usuario como identificador
+          requesterId: uid,
+          receiverId: user.id,
+          status: 'accepted',
+          user: { id: user.id, ...user }
+        }));
+        setFriends(friendsData);
       } catch (error) {
         console.error("Error fetching friends:", error);
       } finally {
@@ -77,8 +96,8 @@ function FriendsList() {
         <Text style={styles.requestPoints}>{item.user.points || 0} pts</Text>
       </View>
       <View style={styles.requestActions}>
-        <TouchableOpacity 
-          style={styles.viewProfileButton} 
+        <TouchableOpacity
+          style={styles.viewProfileButton}
           onPress={() => navigation.navigate('UserProfile', { userId: item.user.id })}
         >
           <Text style={styles.viewProfileButtonText}>Ver Perfil</Text>
@@ -120,7 +139,7 @@ function PendingRequests() {
             const data = requestDoc.data();
             const userDocRef = doc(db, 'users', data.requesterId);
             const userSnap = await getDoc(userDocRef);
-            
+
             return {
               id: requestDoc.id,
               ...data,
@@ -142,7 +161,22 @@ function PendingRequests() {
 
   const handleAccept = async (requestId) => {
     try {
-      await updateDoc(doc(db, 'friendships', requestId), { status: 'accepted' });
+      // Obtener el documento de la solicitud para saber los IDs
+      const requestRef = doc(db, 'friendships', requestId);
+      const requestSnap = await getDoc(requestRef);
+      if (!requestSnap.exists()) return;
+      const { requesterId, receiverId } = requestSnap.data();
+
+      // Actualizar el estado de la solicitud a 'accepted'
+      await updateDoc(requestRef, { status: 'accepted' });
+
+      // Usar arrayUnion para agregar los IDs a los arrays friends de ambos usuarios
+      const requesterRef = doc(db, 'users', requesterId);
+      const receiverRef = doc(db, 'users', receiverId);
+      await Promise.all([
+        updateDoc(requesterRef, { friends: arrayUnion(receiverId) }),
+        updateDoc(receiverRef, { friends: arrayUnion(requesterId) })
+      ]);
     } catch (error) {
       Alert.alert('Error', 'No se pudo aceptar la solicitud.');
       console.error(error);
@@ -296,15 +330,15 @@ export default function ManageFriendsScreen({ navigation }) {
       <Tab.Navigator
         tabBar={props => <CustomTopTabBar {...props} />}
       >
-        <Tab.Screen 
-          name="FriendsList" 
-          component={FriendsList} 
-          options={{ tabBarLabel: 'Amigos' }} 
+        <Tab.Screen
+          name="FriendsList"
+          component={FriendsList}
+          options={{ tabBarLabel: 'Amigos' }}
         />
-        <Tab.Screen 
-          name="PendingRequests" 
-          component={PendingRequests} 
-          options={{ tabBarLabel: 'Solicitudes' }} 
+        <Tab.Screen
+          name="PendingRequests"
+          component={PendingRequests}
+          options={{ tabBarLabel: 'Solicitudes' }}
         />
       </Tab.Navigator>
     </View>

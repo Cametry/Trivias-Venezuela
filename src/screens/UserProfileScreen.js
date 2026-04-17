@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { colors, fonts, spacing, radius } from '../theme/colors';
 
@@ -40,8 +40,20 @@ export default function UserProfileScreen({ route, navigation }) {
     const checkFriendshipStatus = async () => {
       try {
         const currentUserId = auth.currentUser.uid;
-        
-        // Consulta 1: requesterId == auth.currentUser.uid AND receiverId == userId
+
+        // Primero verificar si userId está incluido en el array friends del usuario actual
+        const currentUserRef = doc(db, 'users', currentUserId);
+        const currentUserSnap = await getDoc(currentUserRef);
+        if (currentUserSnap.exists()) {
+          const currentUserData = currentUserSnap.data();
+          const friendsArray = currentUserData.friends || [];
+          if (friendsArray.includes(userId)) {
+            setFriendshipStatus('friends');
+            return;
+          }
+        }
+
+        // Si no está en friends, hacer la consulta normal a friendships para ver si hay un 'pending'
         const q1 = query(
           collection(db, 'friendships'),
           where('requesterId', '==', currentUserId),
@@ -49,7 +61,6 @@ export default function UserProfileScreen({ route, navigation }) {
         );
         const snap1 = await getDocs(q1);
 
-        // Consulta 2: requesterId == userId AND receiverId == auth.currentUser.uid
         const q2 = query(
           collection(db, 'friendships'),
           where('requesterId', '==', userId),
@@ -125,7 +136,7 @@ export default function UserProfileScreen({ route, navigation }) {
               try {
                 setFriendshipStatus('loading');
                 const currentUserId = auth.currentUser.uid;
-                
+
                 const q1 = query(
                   collection(db, 'friendships'),
                   where('requesterId', '==', currentUserId),
@@ -148,7 +159,15 @@ export default function UserProfileScreen({ route, navigation }) {
                 }
 
                 if (docToDelete) {
+                  // Borrar el documento de friendships
                   await deleteDoc(doc(db, 'friendships', docToDelete.id));
+                  // Usar arrayRemove para quitar los IDs de los arrays friends de ambos usuarios
+                  const currentUserRef = doc(db, 'users', currentUserId);
+                  const otherUserRef = doc(db, 'users', userId);
+                  await Promise.all([
+                    updateDoc(currentUserRef, { friends: arrayRemove(userId) }),
+                    updateDoc(otherUserRef, { friends: arrayRemove(currentUserId) })
+                  ]);
                   setFriendshipStatus('none');
                 } else {
                   setFriendshipStatus('none');
@@ -197,7 +216,7 @@ export default function UserProfileScreen({ route, navigation }) {
               </Text>
             </View>
             <Text style={styles.profileName}>{userData.name}</Text>
-            
+
             <View style={styles.pointsContainer}>
               <Text style={styles.pointsIcon}>🏆</Text>
               <Text style={styles.profilePoints}>
@@ -206,9 +225,9 @@ export default function UserProfileScreen({ route, navigation }) {
             </View>
 
             {userData.level && (
-               <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>{userData.level.toUpperCase()}</Text>
-               </View>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelText}>{userData.level.toUpperCase()}</Text>
+              </View>
             )}
           </>
         )}
@@ -221,8 +240,8 @@ export default function UserProfileScreen({ route, navigation }) {
             <ActivityIndicator color={colors.amarillo} />
           </View>
         ) : friendshipStatus === 'none' ? (
-          <TouchableOpacity 
-            style={styles.requestButton} 
+          <TouchableOpacity
+            style={styles.requestButton}
             activeOpacity={0.8}
             onPress={handleFriendAction}
           >
@@ -233,16 +252,16 @@ export default function UserProfileScreen({ route, navigation }) {
             <Text style={[styles.requestButtonText, { color: colors.textMuted }]}>Solicitud Enviada</Text>
           </View>
         ) : friendshipStatus === 'pending_received' ? (
-          <TouchableOpacity 
-            style={[styles.requestButton, { backgroundColor: colors.success }]} 
+          <TouchableOpacity
+            style={[styles.requestButton, { backgroundColor: colors.success }]}
             activeOpacity={0.8}
             onPress={handleFriendAction}
           >
             <Text style={styles.requestButtonText}>Aceptar Solicitud</Text>
           </TouchableOpacity>
         ) : friendshipStatus === 'friends' ? (
-          <TouchableOpacity 
-            style={[styles.requestButton, { backgroundColor: colors.error }]} 
+          <TouchableOpacity
+            style={[styles.requestButton, { backgroundColor: colors.error }]}
             activeOpacity={0.8}
             onPress={handleFriendAction}
           >
