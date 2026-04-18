@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Platform } from 'react-native';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { useFonts, Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { colors } from './src/theme/colors';
+import colors from './src/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,10 +15,10 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
   });
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function App() {
   if (!fontsLoaded || !appReady) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={colors.amarillo} />
+        <ActivityIndicator size="large" color={colors.amarillo.text} />
       </View>
     );
   }

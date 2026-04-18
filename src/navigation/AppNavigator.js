@@ -1,32 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { Text, ActivityIndicator, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import React, { useState, useEffect } from "react";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import {
+  Text,
+  ActivityIndicator,
+  View,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+} from "react-native";
 
-import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/colors';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuth } from "../context/AuthContext";
+import { colors } from "../theme/colors";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Screens
-import CustomSplashScreen from '../screens/CustomSplashScreen';
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import HomeScreen from '../screens/HomeScreen';
-import GameScreen from '../screens/GameScreen';
-import ResultScreen from '../screens/ResultScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import LeaderboardScreen from '../screens/LeaderboardScreen';
-import SearchUsersScreen from '../screens/SearchUsersScreen';
-import UserProfileScreen from '../screens/UserProfileScreen';
-import ManageFriendsScreen from '../screens/ManageFriendsScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import CustomSplashScreen from "../screens/CustomSplashScreen";
+import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
+import HomeScreen from "../screens/HomeScreen";
+import GameScreen from "../screens/GameScreen";
+import ResultScreen from "../screens/ResultScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import LeaderboardScreen from "../screens/LeaderboardScreen";
+import SearchUsersScreen from "../screens/SearchUsersScreen";
+import UserProfileScreen from "../screens/UserProfileScreen";
+import ManageFriendsScreen from "../screens/ManageFriendsScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 
 // Admin
-import AdminDashboard from '../screens/admin/AdminDashboard';
-import ManageCategories from '../screens/admin/ManageCategories';
-import ManageQuestions from '../screens/admin/ManageQuestions';
-import QuestionForm from '../screens/admin/QuestionForm';
+import AdminDashboard from "../screens/admin/AdminDashboard";
+import ManageCategories from "../screens/admin/ManageCategories";
+import ManageQuestions from "../screens/admin/ManageQuestions";
+import QuestionForm from "../screens/admin/QuestionForm";
 
 const MyTheme = {
   ...DefaultTheme,
@@ -46,19 +53,24 @@ const screenOptions = {
 
 function TabIcon({ name, focused }) {
   const icons = {
-    Home: focused ? '🏠' : '🏠',
-    Profile: focused ? '👤' : '👤',
-    Leaderboard: focused ? '🏆' : '🥇',
+    Home: focused ? "🏠" : "🏠",
+    Profile: focused ? "👤" : "👤",
+    Leaderboard: focused ? "🏆" : "🥇",
   };
-  return <Text style={{ fontSize: 20 }}>{icons[name] || '●'}</Text>;
+  return <Text style={{ fontSize: 20 }}>{icons[name] || "●"}</Text>;
 }
 
 // Agregamos "layout" a las propiedades que recibimos
-function CustomBottomTabBar({ state, descriptors, navigation, position, layout }) {
-
-  // Usamos el ancho real del contenedor de la app, y si por un microsegundo 
+function CustomBottomTabBar({
+  state,
+  descriptors,
+  navigation,
+  position,
+  layout,
+}) {
+  // Usamos el ancho real del contenedor de la app, y si por un microsegundo
   // no está listo, usamos el ancho de la ventana como plan B.
-  const containerWidth = layout.width || Dimensions.get('window').width;
+  const containerWidth = layout.width || Dimensions.get("window").width;
   const TAB_WIDTH = containerWidth / state.routes.length;
 
   // Magia de animación: Atamos el movimiento a la posición del swipe
@@ -68,36 +80,40 @@ function CustomBottomTabBar({ state, descriptors, navigation, position, layout }
   });
 
   return (
-    <View style={{
-      flexDirection: 'row',
-      backgroundColor: colors.bgCard,
-      borderTopColor: colors.border,
-      borderTopWidth: 1,
-      height: 65,
-      elevation: 0,
-    }}>
-
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: colors.bgCard,
+        borderTopColor: colors.border,
+        borderTopWidth: 1,
+        height: 65,
+        elevation: 0,
+      }}
+    >
       {/* 🚀 LA BARRITA ANIMADA 🚀 */}
-      <Animated.View style={{
-        position: 'absolute',
-        top: -1,
-        width: TAB_WIDTH,
-        height: 3,
-        backgroundColor: colors.amarillo,
-        transform: [{ translateX }],
-        zIndex: 10,
-      }} />
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: -1,
+          width: TAB_WIDTH,
+          height: 3,
+          backgroundColor: colors.amarillo.bg,
+          transform: [{ translateX }],
+          zIndex: 10,
+        }}
+      />
 
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
-        const label = options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
+        const label =
+          options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
 
         const isFocused = state.index === index;
-        const color = isFocused ? colors.amarillo : colors.textMuted;
+        const color = isFocused ? colors.amarillo.text : colors.textMuted;
 
         const onPress = () => {
           const event = navigation.emit({
-            type: 'tabPress',
+            type: "tabPress",
             target: route.key,
             canPreventDefault: true,
           });
@@ -112,18 +128,20 @@ function CustomBottomTabBar({ state, descriptors, navigation, position, layout }
             key={index}
             onPress={onPress}
             activeOpacity={0.8}
-            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
             {/* Renderizamos el ícono fijo */}
             <TabIcon name={route.name} />
 
             {/* Renderizamos el texto */}
-            <Text style={{
-              color: color,
-              fontFamily: 'Inter_500Medium',
-              fontSize: 11,
-              marginTop: 4
-            }}>
+            <Text
+              style={{
+                color: color,
+                fontFamily: "Inter_500Medium",
+                fontSize: 11,
+                marginTop: 4,
+              }}
+            >
               {label}
             </Text>
           </TouchableOpacity>
@@ -137,11 +155,23 @@ function MainTabs() {
   return (
     <Tab.Navigator
       tabBarPosition="bottom"
-      tabBar={props => <CustomBottomTabBar {...props} />}
+      tabBar={(props) => <CustomBottomTabBar {...props} />}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Inicio' }} />
-      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} options={{ tabBarLabel: 'Ranking' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Perfil' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: "Inicio" }}
+      />
+      <Tab.Screen
+        name="Leaderboard"
+        component={LeaderboardScreen}
+        options={{ tabBarLabel: "Ranking" }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: "Perfil" }}
+      />
     </Tab.Navigator>
   );
 }
@@ -169,8 +199,15 @@ export default function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
-        <ActivityIndicator size="large" color={colors.amarillo} />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.bg,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.amarillo.bg} />
       </View>
     );
   }
@@ -188,7 +225,7 @@ export default function AppNavigator() {
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
             </>
-          ) : user.role === 'admin' ? (
+          ) : user.role === "admin" ? (
             <Stack.Screen name="Admin" component={AdminStack} />
           ) : (
             <>
@@ -196,9 +233,21 @@ export default function AppNavigator() {
               <Stack.Screen name="Game" component={GameScreen} />
               <Stack.Screen name="Result" component={ResultScreen} />
               <Stack.Screen name="SearchUsers" component={SearchUsersScreen} />
-              <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="ManageFriends" component={ManageFriendsScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+              <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="ManageFriends"
+                component={ManageFriendsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ headerShown: false }}
+              />
             </>
           )}
         </Stack.Navigator>
