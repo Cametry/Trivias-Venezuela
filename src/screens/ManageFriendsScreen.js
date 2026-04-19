@@ -6,6 +6,10 @@ import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../config/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, deleteDoc, arrayUnion, documentId } from 'firebase/firestore';
 import { colors, fonts, spacing, radius } from '../theme/colors';
+import ScreenBackground from '../components/ui/ScreenBackground';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import { Ionicons } from '@expo/vector-icons';
 
 // Tab 1: Lista de Amigos
 function FriendsList() {
@@ -73,7 +77,7 @@ function FriendsList() {
   if (loading) {
     return (
       <View style={styles.tabContent}>
-        <ActivityIndicator size="large" color={colors.amarillo} />
+        <ActivityIndicator size="large" color={colors.palette.amarillo.text} />
       </View>
     );
   }
@@ -195,7 +199,7 @@ function PendingRequests() {
   if (loading) {
     return (
       <View style={styles.tabContent}>
-        <ActivityIndicator size="large" color={colors.amarillo} />
+        <ActivityIndicator size="large" color={colors.palette.amarillo.text} />
       </View>
     );
   }
@@ -272,7 +276,7 @@ function CustomTopTabBar({ state, descriptors, navigation, position, layout }) {
         bottom: -1,
         width: TAB_WIDTH,
         height: 3,
-        backgroundColor: colors.amarillo,
+        backgroundColor: colors.palette.amarillo.text,
         transform: [{ translateX }],
         zIndex: 10,
       }} />
@@ -289,7 +293,7 @@ function CustomTopTabBar({ state, descriptors, navigation, position, layout }) {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{
-                color: isFocused ? colors.amarillo : colors.textMuted,
+                color: isFocused ? colors.palette.amarillo.text : colors.textMuted,
                 fontFamily: fonts.bold,
                 fontSize: 14,
               }}>
@@ -313,69 +317,106 @@ export default function ManageFriendsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header Personalizado (Absoluto para mantener armonía) */}
-      <View style={styles.customHeader}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.bubbleBackButton}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backText} numberOfLines={1}>Regresar</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Amigos</Text>
-      </View>
+    <ScreenBackground>
+      <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.md) }]}>
+        {/* Header Personalizado */}
+        <View style={styles.customHeader}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.palette.azul.text} />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Ionicons name="people" size={24} color={colors.palette.amarillo.text} />
+            <Text style={styles.headerTitle}>Mis Amigos</Text>
+          </View>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      {/* Navegador de Pestañas Superior */}
-      <Tab.Navigator
-        tabBar={props => <CustomTopTabBar {...props} />}
-      >
-        <Tab.Screen
-          name="FriendsList"
-          component={FriendsList}
-          options={{ tabBarLabel: 'Amigos' }}
-        />
-        <Tab.Screen
-          name="PendingRequests"
-          component={PendingRequests}
-          options={{ tabBarLabel: 'Solicitudes' }}
-        />
-      </Tab.Navigator>
-    </View>
+        {/* Navegador de Pestañas Superior */}
+        <Tab.Navigator
+          tabBar={props => <CustomTopTabBar {...props} />}
+        >
+          <Tab.Screen
+            name="FriendsList"
+            component={FriendsList}
+            options={{ tabBarLabel: 'Amigos' }}
+          />
+          <Tab.Screen
+            name="PendingRequests"
+            component={PendingRequests}
+            options={{ tabBarLabel: 'Solicitudes' }}
+          />
+        </Tab.Navigator>
+
+        {/* Botón flotante "Buscar Amigos" */}
+        <View style={styles.floatingButtonContainer}>
+          <Button
+            label="Buscar Amigos"
+            variant="secondary"
+            icon="search-outline"
+            iconPosition="left"
+            onPress={() => navigation.navigate('SearchUsers')}
+            fullWidth={false}
+            style={styles.floatingButton}
+          />
+        </View>
+      </View>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
   customHeader: {
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.palette.azul.bg,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: spacing.md,
   },
-  bubbleBackButton: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  backText: {
-    color: colors.textPrimary,
-    fontFamily: fonts.medium,
-    fontSize: 13,
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    fontSize: 22,
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.md,
+    zIndex: 100,
+  },
+  floatingButton: {
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   tabContent: {
     flex: 1,
@@ -400,20 +441,29 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: radius.md,
+    borderRadius: radius.xxl,
     padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   requestAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.azul,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.palette.azul.bg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.palette.azul.text,
   },
   requestAvatarText: {
     color: colors.textPrimary,
@@ -429,7 +479,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   requestPoints: {
-    color: colors.amarillo,
+    color: colors.palette.amarillo.text,
     fontFamily: fonts.regular,
     fontSize: 13,
   },
@@ -445,10 +495,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   acceptButton: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.palette.verde.bg,
   },
   rejectButton: {
-    backgroundColor: colors.error, // Usando rojo para rechazar
+    backgroundColor: colors.palette.rojo.bg,
   },
   actionButtonText: {
     color: colors.textPrimary,
@@ -469,7 +519,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
   },
   tabBadge: {
-    backgroundColor: colors.rojo,
+    backgroundColor: colors.palette.rojo.text,
     borderRadius: 10,
     minWidth: 20,
     height: 20,

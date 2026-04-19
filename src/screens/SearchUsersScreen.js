@@ -10,8 +10,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db, auth } from '../config/firebase'; // Importar auth
+import { Ionicons } from '@expo/vector-icons';
+import { db, auth } from '../config/firebase';
 import { colors, fonts, spacing, radius } from '../theme/colors';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 export default function SearchUsersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -79,46 +82,55 @@ export default function SearchUsersScreen({ navigation }) {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.userCard}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.name?.[0]?.toUpperCase() || '?'}</Text>
+    <Card
+      onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
+      accentColor={colors.palette.azul.text}
+      style={styles.userCard}
+    >
+      <View style={styles.userCardContent}>
+        <View style={styles.avatarContainer}>
+          <View style={[styles.avatar, { backgroundColor: colors.palette.azul.bg }]}>
+            <Text style={styles.avatarText}>{item.name?.[0]?.toUpperCase() || '?'}</Text>
+          </View>
+        </View>
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{item.name}</Text>
+          <View style={styles.pointsContainer}>
+            <Ionicons name="trophy" size={14} color={colors.palette.amarillo.text} />
+            <Text style={styles.userPoints}>{item.points || 0} pts</Text>
+          </View>
+        </View>
+        <View style={styles.arrowContainer}>
+          <Ionicons name="chevron-forward" size={20} color={colors.palette.azul.text} />
+        </View>
       </View>
-      <View style={styles.userInfo}>
-        <Text style={styles.userName}>{item.name}</Text>
-        <Text style={styles.userPoints}>{item.points || 0} pts</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.addButton}
-        activeOpacity={0.7}
-        onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
-      >
-        <Text style={styles.addButtonText}>Ver Perfil</Text>
-      </TouchableOpacity>
-    </View>
+    </Card>
   );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header Personalizado Equilibrado */}
+      {/* Header Personalizado */}
       <View style={styles.customHeader}>
-        {/* Botón de Regresar (Posicionamiento Absoluto) */}
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.bubbleBackButton}
+          style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.backText} numberOfLines={1}>Regresar</Text>
+          <Ionicons name="arrow-back" size={24} color={colors.palette.azul.text} />
         </TouchableOpacity>
 
-        {/* Centro: Título */}
         <Text style={styles.headerTitle}>Buscar Amigos</Text>
+
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* Subtítulo Disimulado */}
+      {/* Subtítulo */}
       <Text style={styles.screenSubtitle}>Encuentra otros jugadores para competir</Text>
 
+      {/* Sección de búsqueda */}
       <View style={styles.searchSection}>
         <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={20} color={colors.palette.azul.text} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Nombre o correo..."
@@ -130,24 +142,23 @@ export default function SearchUsersScreen({ navigation }) {
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.searchButton}
+        <Button
+          label="Buscar"
+          variant="secondary"
           onPress={handleSearch}
-          activeOpacity={0.8}
+          loading={loading}
           disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.textPrimary} />
-          ) : (
-            <Text style={styles.searchButtonText}>Buscar</Text>
-          )}
-        </TouchableOpacity>
+          icon="search"
+          iconPosition="right"
+        />
       </View>
 
       {/* Resultados */}
       {hasSearched && users.length === 0 && !loading ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No se encontraron jugadores.</Text>
+          <Ionicons name="people-outline" size={60} color={colors.palette.azul.bg} />
+          <Text style={styles.emptyText}>No se encontraron jugadores</Text>
+          <Text style={styles.emptySubtext}>Intenta con otro nombre o correo</Text>
         </View>
       ) : (
         <FlatList
@@ -156,6 +167,7 @@ export default function SearchUsersScreen({ navigation }) {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -168,138 +180,128 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   customHeader: {
-    position: 'relative',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
     marginBottom: spacing.xs,
   },
-  bubbleBackButton: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
+  backButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-  },
-  backText: {
-    color: colors.textPrimary,
-    fontFamily: fonts.medium,
-    fontSize: 13,
+    backgroundColor: colors.palette.azul.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: fonts.bold,
-    color: colors.textPrimary,
+    color: colors.palette.azul.text,
     textAlign: 'center',
   },
+  headerSpacer: {
+    width: 40,
+  },
   screenSubtitle: {
-    color: '#A0A0A0',
+    color: colors.palette.azul.text,
     fontSize: 14,
     fontFamily: fonts.regular,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
+    opacity: 0.8,
   },
   searchSection: {
     paddingHorizontal: spacing.md,
     marginBottom: spacing.lg,
   },
   searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.palette.azul.bg,
     marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
   },
   searchInput: {
-    backgroundColor: colors.bgCard,
+    flex: 1,
     color: colors.textPrimary,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     fontSize: 16,
     fontFamily: fonts.regular,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchButton: {
-    backgroundColor: colors.azul,
-    borderRadius: radius.lg,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.azul,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  searchButtonText: {
-    color: colors.textPrimary,
-    fontFamily: fonts.bold,
-    fontSize: 16,
   },
   listContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
   },
   userCard: {
+    marginBottom: spacing.sm,
+  },
+  userCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  avatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: colors.azul,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginRight: spacing.md,
   },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatarText: {
-    color: colors.textPrimary,
+    color: colors.palette.azul.text,
     fontFamily: fonts.bold,
-    fontSize: 18,
+    fontSize: 20,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: fonts.semiBold,
     color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userPoints: {
     fontSize: 14,
-    fontFamily: fonts.regular,
-    color: colors.amarillo,
-  },
-  addButton: {
-    backgroundColor: colors.bgInput,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  addButtonText: {
-    color: colors.textPrimary,
-    fontSize: 12,
     fontFamily: fonts.medium,
+    color: colors.palette.amarillo.text,
+    marginLeft: 4,
+  },
+  arrowContainer: {
+    marginLeft: spacing.sm,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 60,
   },
   emptyText: {
+    color: colors.palette.azul.text,
+    fontFamily: fonts.semiBold,
+    fontSize: 18,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  emptySubtext: {
     color: colors.textSecondary,
     fontFamily: fonts.regular,
-    fontSize: 16,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
 });
