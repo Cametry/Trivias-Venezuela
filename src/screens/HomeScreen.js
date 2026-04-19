@@ -44,14 +44,14 @@ const safeLevelColor = (v) => levelColors[safeLevel(v)] || FALLBACK_COLOR;
 
 // ── Helper: color de categoría del nuevo sistema pastel ───────
 const getCatColors = (catId) =>
-  colors.category[catId] || { bg: colors.azul.bg, text: colors.azul.text };
+  colors.category[catId] || { bg: colors.palette.azul.bg, text: colors.palette.azul.text };
 
 // ── Helper: colores pastel por nivel ─────────────────────────
 const LEVEL_PASTEL = {
-  basico:     () => colors.verde,
+  basico: () => colors.verde,
   intermedio: () => colors.azul,
-  avanzado:   () => colors.naranja,
-  experto:    () => colors.rojo,
+  avanzado: () => colors.naranja,
+  experto: () => colors.rojo,
 };
 const getLevelPastel = (level) =>
   (LEVEL_PASTEL[safeLevel(level)] || LEVEL_PASTEL.basico)();
@@ -160,7 +160,7 @@ function ScoreBar({
         </TouchableOpacity>
 
         <View style={styles.ptsChip}>
-          <Ionicons name="star" size={13} color={colors.amarillo.text} />
+          <Ionicons name="star" size={13} color={colors.palette.amarillo.text} />
           <Text style={styles.scorePts}>{user.points || 0} pts</Text>
         </View>
 
@@ -175,7 +175,7 @@ function ScoreBar({
         <Ionicons
           name={pendingRequests > 0 ? "notifications" : "notifications-outline"}
           size={24}
-          color={pendingRequests > 0 ? colors.rojo.text : colors.textSecondary}
+          color={pendingRequests > 0 ? colors.palette.rojo.text : colors.textSecondary}
         />
         {pendingRequests > 0 && (
           <View style={styles.notifBadge}>
@@ -274,7 +274,7 @@ export default function HomeScreen({ navigation }) {
 
         {loading ? (
           <ActivityIndicator
-            color={colors.amarillo.text}
+            color={colors.palette.amarillo.text}
             size="large"
             style={{ marginTop: 40 }}
           />
@@ -310,7 +310,7 @@ export default function HomeScreen({ navigation }) {
             <Ionicons
               name="chevron-forward"
               size={20}
-              color={colors.amarillo.text}
+              color={colors.palette.amarillo.text}
             />
           </TouchableOpacity>
         )}
@@ -337,8 +337,8 @@ export default function HomeScreen({ navigation }) {
             navigation.navigate("Settings");
           }}
         >
-          <View style={[styles.drawerItemIcon, { backgroundColor: colors.azul.bg }]}>
-            <Ionicons name="settings" size={18} color={colors.azul.text} />
+          <View style={[styles.drawerItemIcon, { backgroundColor: colors.palette.azul.bg }]}>
+            <Ionicons name="settings" size={18} color={colors.palette.azul.text} />
           </View>
           <Text style={styles.drawerItemText}>Ajustes</Text>
         </TouchableOpacity>
@@ -369,7 +369,7 @@ export default function HomeScreen({ navigation }) {
             <Ionicons
               name="people"
               size={20}
-              color={colors.azul.text}
+              color={colors.palette.azul.text}
               style={{ marginBottom: 6 }}
             />
             <Text style={styles.notifCardText}>
@@ -429,14 +429,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: colors.amarillo.bg,
+    backgroundColor: colors.palette.amarillo.bg,
     borderRadius: radius.full,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   scorePts: {
     fontFamily: fonts.bold,
-    color: colors.amarillo.text,
+    color: colors.palette.amarillo.text,
     fontSize: 13,
   },
   levelBadge: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.rojo.text,
+    backgroundColor: colors.palette.rojo.text,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     borderWidth: 2,
-    borderColor: colors.amarillo.bg,
+    borderColor: colors.palette.amarillo.bg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: radius.xl,
-    backgroundColor: colors.amarillo.bg,
+    backgroundColor: colors.palette.amarillo.bg,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -623,12 +623,12 @@ const styles = StyleSheet.create({
   notifCard: {
     margin: spacing.sm,
     padding: spacing.md,
-    backgroundColor: colors.azul.bg,
+    backgroundColor: colors.palette.azul.bg,
     borderRadius: radius.xl,
   },
   notifCardText: {
     fontFamily: fonts.semiBold,
-    color: colors.azul.text,
+    color: colors.palette.azul.text,
     fontSize: 14,
     lineHeight: 20,
   },

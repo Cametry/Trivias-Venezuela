@@ -23,9 +23,9 @@ function Button3D({ label, onPress, loading, variant = 'primary' }) {
 
   const VARIANTS = {
     primary: {
-      bg:     colors.amarillo.bg,
-      text:   colors.amarillo.text,
-      shadow: colors.amarillo.dark,
+      bg: colors.palette.amarillo.bg,
+      text: colors.palette.amarillo.text,
+      shadow: colors.palette.amarillo.dark,
     },
   };
   const v = VARIANTS[variant];
@@ -80,7 +80,7 @@ function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, ke
       <Ionicons
         name={icon}
         size={18}
-        color={focused ? colors.amarillo.text : colors.textMuted}
+        color={focused ? colors.palette.amarillo.text : colors.textMuted}
         style={s.inputIcon}
       />
       <TextInput
@@ -114,18 +114,18 @@ function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, ke
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
   const insets = useSafeAreaInsets();
-  const [name, setName]       = useState('');
-  const [email, setEmail]     = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirm) { setError('Completa todos los campos.'); return; }
     if (name.trim().length < 3) { setError('El nombre debe tener al menos 3 caracteres.'); return; }
-    if (password.length < 6)   { setError('La contraseña debe tener mínimo 6 caracteres.'); return; }
-    if (password !== confirm)  { setError('Las contraseñas no coinciden.'); return; }
+    if (password.length < 6) { setError('La contraseña debe tener mínimo 6 caracteres.'); return; }
+    if (password !== confirm) { setError('Las contraseñas no coinciden.'); return; }
     setLoading(true); setError('');
     try {
       await register(email.trim(), password, name.trim());
@@ -153,7 +153,7 @@ export default function RegisterScreen({ navigation }) {
             style={s.backBtn}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={20} color={colors.amarillo.text} />
+            <Ionicons name="arrow-back" size={20} color={colors.palette.amarillo.text} />
             <Text style={s.backText}>Volver</Text>
           </TouchableOpacity>
 
@@ -165,7 +165,7 @@ export default function RegisterScreen({ navigation }) {
           {/* ── Error ── */}
           {!!error && (
             <View style={s.errorBox}>
-              <Ionicons name="warning" size={15} color={colors.rojo.text} />
+              <Ionicons name="warning" size={15} color={colors.palette.rojo.text} />
               <Text style={s.errorText}>{error}</Text>
             </View>
           )}
@@ -269,7 +269,7 @@ const s = StyleSheet.create({
   backText: {
     fontFamily: fonts.bold,
     fontSize: 14,
-    color: colors.amarillo.text,
+    color: colors.palette.amarillo.text,
   },
   titleBlock: {
     marginBottom: spacing.xl,
@@ -291,13 +291,13 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.rojo.bg,
+    backgroundColor: colors.palette.rojo.bg,
     borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   errorText: {
-    color: colors.rojo.text,
+    color: colors.palette.rojo.text,
     fontFamily: fonts.semiBold,
     fontSize: 13,
     flex: 1,
@@ -322,8 +322,8 @@ const s = StyleSheet.create({
     borderColor: colors.border,
   },
   inputWrapFocused: {
-    borderColor: colors.amarillo.text,
-    backgroundColor: colors.amarillo.bg + '40',
+    borderColor: colors.palette.amarillo.text,
+    backgroundColor: colors.palette.amarillo.bg + '40',
   },
   inputIcon: {
     paddingLeft: spacing.md,
@@ -379,6 +379,6 @@ const s = StyleSheet.create({
   },
   linkBold: {
     fontFamily: fonts.bold,
-    color: colors.amarillo.text,
+    color: colors.palette.amarillo.text,
   },
 });

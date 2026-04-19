@@ -17,39 +17,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import colors, { fonts, spacing, radius } from '../theme/colors';
- 
+
 // ── Botón 3D reutilizable (inline para no depender de imports externos) ──
 function Button3D({ label, onPress, loading, variant = 'primary' }) {
   const pressAnim = useRef(new Animated.Value(0)).current;
- 
+
   const VARIANTS = {
     primary: {
-      bg: colors.amarillo.bg,
-      text: colors.amarillo.text,
-      shadow: colors.amarillo.dark,
+      bg: colors.palette.amarillo.bg,
+      text: colors.palette.amarillo.text,
+      shadow: colors.palette.amarillo.dark,
     },
   };
   const v = VARIANTS[variant];
- 
+
   const handlePressIn = () =>
     Animated.timing(pressAnim, {
       toValue: 1, duration: 80,
       useNativeDriver: Platform.OS !== 'web',
     }).start();
- 
+
   const handlePressOut = () =>
     Animated.timing(pressAnim, {
       toValue: 0, duration: 80,
       useNativeDriver: Platform.OS !== 'web',
     }).start();
- 
+
   const translateY = pressAnim.interpolate({
     inputRange: [0, 1], outputRange: [0, 3],
   });
   const shadowH = pressAnim.interpolate({
     inputRange: [0, 1], outputRange: [4, 1],
   });
- 
+
   return (
     <TouchableWithoutFeedback
       onPress={loading ? null : onPress}
@@ -73,18 +73,18 @@ function Button3D({ label, onPress, loading, variant = 'primary' }) {
     </TouchableWithoutFeedback>
   );
 }
- 
+
 // ── Input con ícono ───────────────────────────────────────────────────────
 function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize }) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry);
- 
+
   return (
     <View style={[s.inputWrap, focused && s.inputWrapFocused]}>
       <Ionicons
         name={icon}
         size={18}
-        color={focused ? colors.amarillo.text : colors.textMuted}
+        color={focused ? colors.palette.amarillo.text : colors.textMuted}
         style={s.inputIcon}
       />
       <TextInput
@@ -111,7 +111,7 @@ function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, ke
     </View>
   );
 }
- 
+
 // =============================================================
 //  LoginScreen — lógica 100% sin cambios
 // =============================================================
@@ -122,7 +122,7 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
- 
+
   const handleLogin = async () => {
     if (!email || !password) { setError('Completa todos los campos.'); return; }
     setLoading(true); setError('');
@@ -134,7 +134,7 @@ export default function LoginScreen({ navigation }) {
       setLoading(false);
     }
   };
- 
+
   return (
     <View style={s.root}>
       <KeyboardAvoidingView
@@ -155,22 +155,22 @@ export default function LoginScreen({ navigation }) {
                 resizeMode="contain"
               />
             </View>
- 
+
           </View>
- 
+
           {/* ── Tarjeta formulario ── */}
           <View style={s.card}>
             <Text style={s.cardTitle}>Bienvenido de nuevo</Text>
             <Text style={s.cardSubtitle}>Inicia sesión para continuar</Text>
- 
+
             {/* Error */}
             {!!error && (
               <View style={s.errorBox}>
-                <Ionicons name="warning" size={15} color={colors.rojo.text} />
+                <Ionicons name="warning" size={15} color={colors.palette.rojo.text} />
                 <Text style={s.errorText}>{error}</Text>
               </View>
             )}
- 
+
             {/* Correo */}
             <View style={s.inputGroup}>
               <Text style={s.label}>Correo electrónico</Text>
@@ -182,7 +182,7 @@ export default function LoginScreen({ navigation }) {
                 keyboardType="email-address"
               />
             </View>
- 
+
             {/* Contraseña */}
             <View style={s.inputGroup}>
               <Text style={s.label}>Contraseña</Text>
@@ -194,7 +194,7 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry
               />
             </View>
- 
+
             {/* Botón ingresar */}
             <View style={{ marginTop: spacing.sm }}>
               <Button3D
@@ -204,7 +204,7 @@ export default function LoginScreen({ navigation }) {
                 variant="primary"
               />
             </View>
- 
+
             {/* Link registro */}
             <TouchableOpacity
               onPress={() => navigation.navigate('Register')}
@@ -217,14 +217,14 @@ export default function LoginScreen({ navigation }) {
               </Text>
             </TouchableOpacity>
           </View>
- 
+
           <View style={{ height: insets.bottom + 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
- 
+
 // =============================================================
 //  Estilos
 // =============================================================
@@ -238,7 +238,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
- 
+
   // ── Logo section ─────────────────────────────────────────────
   logoSection: {
     alignItems: 'center',
@@ -248,12 +248,12 @@ const s = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 80,
-    backgroundColor: colors.amarillo.bg,
+    backgroundColor: colors.palette.amarillo.bg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.md,
     // Sombra iOS
-    shadowColor: colors.amarillo.dark,
+    shadowColor: colors.palette.amarillo.dark,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -275,7 +275,7 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
- 
+
   // ── Tarjeta formulario ───────────────────────────────────────
   card: {
     backgroundColor: colors.bgCard,
@@ -301,24 +301,24 @@ const s = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.lg,
   },
- 
+
   // ── Error ────────────────────────────────────────────────────
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.rojo.bg,
+    backgroundColor: colors.palette.rojo.bg,
     borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   errorText: {
-    color: colors.rojo.text,
+    color: colors.palette.rojo.text,
     fontFamily: fonts.semiBold,
     fontSize: 13,
     flex: 1,
   },
- 
+
   // ── Input ────────────────────────────────────────────────────
   inputGroup: {
     marginBottom: spacing.md,
@@ -338,8 +338,8 @@ const s = StyleSheet.create({
     borderColor: colors.border,
   },
   inputWrapFocused: {
-    borderColor: colors.amarillo.text,
-    backgroundColor: colors.amarillo.bg + '40',
+    borderColor: colors.palette.amarillo.text,
+    backgroundColor: colors.palette.amarillo.bg + '40',
   },
   inputIcon: {
     paddingLeft: spacing.md,
@@ -356,7 +356,7 @@ const s = StyleSheet.create({
   eyeBtn: {
     padding: spacing.md,
   },
- 
+
   // ── Botón 3D ─────────────────────────────────────────────────
   btnWrapper: {
     width: '100%',
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 16,
   },
- 
+
   // ── Link ─────────────────────────────────────────────────────
   link: {
     alignItems: 'center',
@@ -399,6 +399,6 @@ const s = StyleSheet.create({
   },
   linkBold: {
     fontFamily: fonts.bold,
-    color: colors.amarillo.text,
+    color: colors.palette.amarillo.text,
   },
 });
