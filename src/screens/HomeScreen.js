@@ -7,14 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Modal,
   Animated,
-  Dimensions,
   Pressable,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import {
   collection,
   query,
@@ -25,12 +23,10 @@ import {
 import { db } from "../config/firebase";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
-import {
-  colors,
+import colors, {
   fonts,
   spacing,
   radius,
-  categoryColors,
   levelColors,
 } from "../theme/colors";
 import {
@@ -40,16 +36,33 @@ import {
   QUESTIONS_PER_LEVEL,
 } from "../utils/levels";
 
-// Safe helpers — prevents undefined from reaching LinearGradient
-const FALLBACK_COLOR = "#2ECC71";
+// ── Safe helpers (sin cambios) ────────────────────────────────
+const FALLBACK_COLOR = "#1E7A45";
 const safeLevel = (v) =>
   v && levelColors[v.toLowerCase()] ? v.toLowerCase() : "basico";
 const safeLevelColor = (v) => levelColors[safeLevel(v)] || FALLBACK_COLOR;
 
+// ── Helper: color de categoría del nuevo sistema pastel ───────
+const getCatColors = (catId) =>
+  colors.category[catId] || { bg: colors.azul.bg, text: colors.azul.text };
+
+// ── Helper: colores pastel por nivel ─────────────────────────
+const LEVEL_PASTEL = {
+  basico:     () => colors.verde,
+  intermedio: () => colors.azul,
+  avanzado:   () => colors.naranja,
+  experto:    () => colors.rojo,
+};
+const getLevelPastel = (level) =>
+  (LEVEL_PASTEL[safeLevel(level)] || LEVEL_PASTEL.basico)();
+
+// =============================================================
+//  SideDrawer — lógica sin cambios, colores actualizados
+// =============================================================
 function SideDrawer({ visible, onClose, side = "left", children }) {
   const [show, setShow] = useState(visible);
   const slideAnim = useRef(
-    new Animated.Value(side === "left" ? -500 : 500),
+    new Animated.Value(side === "left" ? -500 : 500)
   ).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -89,20 +102,19 @@ function SideDrawer({ visible, onClose, side = "left", children }) {
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 10 }]}>
-      {/* Fondo oscuro y borroso */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
           {Platform.OS === "web" ? (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: "rgba(0,0,0,0.7)" },
+                { backgroundColor: "rgba(45,45,45,0.35)" },
               ]}
             />
           ) : (
             <BlurView
               intensity={5}
-              tint="dark"
+              tint="light"
               style={StyleSheet.absoluteFill}
               experimentalBlurMethod="dimezisBlurView"
             />
@@ -110,22 +122,16 @@ function SideDrawer({ visible, onClose, side = "left", children }) {
         </Pressable>
       </Animated.View>
 
-      {/* El Cajón Deslizable */}
       <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          [side]: 0,
-          width: "75%",
-          maxWidth: 320, // Previene que sea gigante en tablets/web
-          backgroundColor: colors.bgCard,
-          borderRightWidth: side === "left" ? 1 : 0,
-          borderLeftWidth: side === "right" ? 1 : 0,
-          borderColor: colors.border,
-          paddingHorizontal: spacing.md,
-          transform: [{ translateX: slideAnim }],
-        }}
+        style={[
+          styles.drawer,
+          {
+            [side]: 0,
+            borderRightWidth: side === "left" ? 1 : 0,
+            borderLeftWidth: side === "right" ? 1 : 0,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
       >
         {children}
       </Animated.View>
@@ -133,6 +139,9 @@ function SideDrawer({ visible, onClose, side = "left", children }) {
   );
 }
 
+// =============================================================
+//  ScoreBar — lógica sin cambios, rediseño visual
+// =============================================================
 function ScoreBar({
   user,
   paddingTop,
@@ -140,61 +149,66 @@ function ScoreBar({
   onOpenMenu,
   onOpenNotifications,
 }) {
-  const navigation = useNavigation();
+  const lp = getLevelPastel(user.level);
   const level = safeLevel(user.level);
-  const lc = safeLevelColor(user.level);
+
   return (
-    <LinearGradient
-      colors={[colors.surface, colors.bgCard]}
-      style={[styles.scoreBar, { paddingTop }]}
-    >
+    <View style={[styles.scoreBar, { paddingTop }]}>
       <View style={styles.scoreLeft}>
         <TouchableOpacity onPress={onOpenMenu} style={styles.iconBtn}>
-          <Text style={{ fontSize: 24, color: colors.textPrimary }}>☰</Text>
+          <Ionicons name="menu" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.scorePts}>⭐ {user.points || 0} pts</Text>
-        <View
-          style={[
-            styles.levelBadge,
-            { backgroundColor: lc + "30", borderColor: lc },
-          ]}
-        >
-          <Text style={[styles.levelText, { color: lc }]}>
+
+        <View style={styles.ptsChip}>
+          <Ionicons name="star" size={13} color={colors.amarillo.text} />
+          <Text style={styles.scorePts}>{user.points || 0} pts</Text>
+        </View>
+
+        <View style={[styles.levelBadge, { backgroundColor: lp.bg }]}>
+          <Text style={[styles.levelText, { color: lp.text }]}>
             {LEVEL_LABELS[level]}
           </Text>
         </View>
       </View>
-      <View style={styles.scoreRight}>
-        <TouchableOpacity onPress={onOpenNotifications} style={styles.iconBtn}>
-          <Text style={{ fontSize: 22 }}>🔔</Text>
-          {pendingRequests > 0 && (
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationText}>{pendingRequests}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
+
+      <TouchableOpacity onPress={onOpenNotifications} style={styles.bellBtn}>
+        <Ionicons
+          name={pendingRequests > 0 ? "notifications" : "notifications-outline"}
+          size={24}
+          color={pendingRequests > 0 ? colors.rojo.text : colors.textSecondary}
+        />
+        {pendingRequests > 0 && (
+          <View style={styles.notifBadge}>
+            <Text style={styles.notifBadgeText}>{pendingRequests}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 }
 
+// =============================================================
+//  CategoryCard — lógica sin cambios, rediseño visual
+// =============================================================
 function CategoryCard({ cat, onPress }) {
-  const bgColor = (categoryColors[cat.id] || colors.azul) + "18";
-  const border = categoryColors[cat.id] || colors.azul;
+  const cc = getCatColors(cat.id);
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[
-        styles.catCard,
-        { backgroundColor: bgColor, borderColor: border + "55" },
-      ]}
+      activeOpacity={0.85}
+      style={[styles.catCard, { backgroundColor: cc.bg }]}
     >
-      <Text style={styles.catIcon}>{cat.icon}</Text>
-      <Text style={styles.catName}>{cat.name}</Text>
+      <View style={[styles.catIconWrap, { backgroundColor: cc.text + "20" }]}>
+        <Text style={styles.catIcon}>{cat.icon}</Text>
+      </View>
+      <Text style={[styles.catName, { color: cc.text }]}>{cat.name}</Text>
     </TouchableOpacity>
   );
 }
 
+// =============================================================
+//  HomeScreen — lógica 100% sin cambios
+// =============================================================
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -216,23 +230,18 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (!user) return;
-
     const q = query(
       collection(db, "friendships"),
       where("receiverId", "==", user.uid),
-      where("status", "==", "pending"),
+      where("status", "==", "pending")
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setPendingRequests(snapshot.size);
     });
-
     return unsubscribe;
   }, [user]);
 
@@ -244,7 +253,6 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      {/* El paddingTop va SOLO en el ScoreBar (header), no en el root */}
       <ScoreBar
         user={user}
         paddingTop={insets.top + 10}
@@ -253,18 +261,21 @@ export default function HomeScreen({ navigation }) {
         onOpenNotifications={() => setNotifVisible(true)}
       />
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <Text style={styles.greeting}>
-            Hola, <Text style={styles.name}>{user.name}</Text> 👋
-          </Text>
+          <Text style={styles.greeting}>Hola, 👋</Text>
+          <Text style={styles.name}>{user.name}</Text>
         </View>
 
         <Text style={styles.sectionTitle}>Elige una categoría</Text>
 
         {loading ? (
           <ActivityIndicator
-            color={colors.amarillo.bg}
+            color={colors.amarillo.text}
+            size="large"
             style={{ marginTop: 40 }}
           />
         ) : (
@@ -280,57 +291,32 @@ export default function HomeScreen({ navigation }) {
         )}
 
         {!loading && (
-          <View
-            style={{
-              marginTop:
-                Platform.OS === "web"
-                  ? 25
-                  : Platform.OS === "android"
-                    ? -15
-                    : 15,
-            }}
+          <TouchableOpacity
+            style={styles.allCard}
+            activeOpacity={0.85}
+            onPress={() =>
+              startGame({ id: "all", name: "De todo un poco", icon: "🎲" })
+            }
           >
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.bgCard,
-                borderRadius: radius.lg,
-                padding: spacing.md,
-                borderWidth: 1,
-                borderColor: colors.amarillo.bg + "55",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-              onPress={() =>
-                startGame({ id: "all", name: "De todo un poco", icon: "🎲" })
-              }
-            >
-              <Text style={{ fontSize: 32, marginRight: spacing.md }}>🎲</Text>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.bold,
-                    color: colors.textPrimary,
-                    fontSize: 16,
-                  }}
-                >
-                  De todo un poco
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.regular,
-                    color: colors.textMuted,
-                    fontSize: 12,
-                  }}
-                >
-                  Un mix de todas las categorías adaptado a tu nivel.
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.allCardIconWrap}>
+              <Text style={{ fontSize: 30 }}>🎲</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.allCardTitle}>De todo un poco</Text>
+              <Text style={styles.allCardSub}>
+                Un mix de todas las categorías adaptado a tu nivel.
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.amarillo.text}
+            />
+          </TouchableOpacity>
         )}
       </ScrollView>
 
-      {/* Drawer Menu */}
+      {/* Drawer Menú */}
       <SideDrawer
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
@@ -351,12 +337,14 @@ export default function HomeScreen({ navigation }) {
             navigation.navigate("Settings");
           }}
         >
-          <Text style={styles.drawerItemIcon}>⚙️</Text>
+          <View style={[styles.drawerItemIcon, { backgroundColor: colors.azul.bg }]}>
+            <Ionicons name="settings" size={18} color={colors.azul.text} />
+          </View>
           <Text style={styles.drawerItemText}>Ajustes</Text>
         </TouchableOpacity>
       </SideDrawer>
 
-      {/* Drawer Notifications */}
+      {/* Drawer Notificaciones */}
       <SideDrawer
         visible={notifVisible}
         onClose={() => setNotifVisible(false)}
@@ -378,160 +366,281 @@ export default function HomeScreen({ navigation }) {
               navigation.navigate("ManageFriends");
             }}
           >
+            <Ionicons
+              name="people"
+              size={20}
+              color={colors.azul.text}
+              style={{ marginBottom: 6 }}
+            />
             <Text style={styles.notifCardText}>
-              Tienes solicitudes de amistad pendientes
+              Tienes {pendingRequests} solicitud
+              {pendingRequests > 1 ? "es" : ""} de amistad pendiente
+              {pendingRequests > 1 ? "s" : ""}
             </Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.emptyNotifText}>
-            No hay notificaciones nuevas
-          </Text>
+          <View style={styles.emptyNotif}>
+            <Ionicons
+              name="notifications-off-outline"
+              size={36}
+              color={colors.textMuted}
+            />
+            <Text style={styles.emptyNotifText}>
+              No hay notificaciones nuevas
+            </Text>
+          </View>
         )}
       </SideDrawer>
     </View>
   );
 }
 
+// =============================================================
+//  Estilos
+// =============================================================
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  scroll: { padding: spacing.md, paddingBottom: 100 },
+  root: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+
+  // ScoreBar
   scoreBar: {
+    backgroundColor: colors.bgCard,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm + 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  scoreLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  scoreLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  iconBtn: { padding: 4 },
+  ptsChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.amarillo.bg,
+    borderRadius: radius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
   scorePts: {
     fontFamily: fonts.bold,
     color: colors.amarillo.text,
-    fontSize: 16,
+    fontSize: 13,
   },
   levelBadge: {
     borderRadius: radius.full,
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 1,
+    paddingVertical: 4,
   },
-  levelText: { fontFamily: fonts.semiBold, fontSize: 11 },
-  scoreRight: {
-    flexDirection: "row",
-    gap: 15,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    flex: 1,
+  levelText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
   },
-  iconBtn: { padding: 4, position: "relative" },
-  notificationBadge: {
+  bellBtn: {
+    padding: 6,
+    position: "relative",
+  },
+  notifBadge: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.rojo,
+    top: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.rojo.text,
     justifyContent: "center",
     alignItems: "center",
   },
-  notificationText: { color: "#fff", fontSize: 10, fontFamily: fonts.bold },
+  notifBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontFamily: fonts.bold,
+  },
+
+  // Scroll
+  scroll: {
+    padding: spacing.md,
+    paddingBottom: 120,
+  },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
   greeting: {
     fontFamily: fonts.regular,
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 15,
   },
-  name: { fontFamily: fonts.bold, color: colors.textPrimary },
+  name: {
+    fontFamily: fonts.extraBold,
+    color: colors.textPrimary,
+    fontSize: 22,
+    marginTop: 2,
+  },
   sectionTitle: {
     fontFamily: fonts.bold,
     color: colors.textPrimary,
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: spacing.md,
   },
+
+  // Grid categorías
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
     justifyContent: "space-between",
+    marginBottom: spacing.md,
   },
   catCard: {
     width: "31%",
     aspectRatio: 1,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.xl,
     justifyContent: "center",
     alignItems: "center",
     padding: spacing.sm,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  catIcon: { fontSize: 28, marginBottom: 6 },
+  catIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  catIcon: { fontSize: 24 },
   catName: {
-    fontFamily: fonts.semiBold,
-    color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 11,
     textAlign: "center",
   },
-  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
-  drawerContainer: {
+
+  // Card "De todo un poco"
+  allCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xxl,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.amarillo.bg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+    marginTop: spacing.sm,
+  },
+  allCardIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: radius.xl,
+    backgroundColor: colors.amarillo.bg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  allCardTitle: {
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
+    fontSize: 16,
+    marginBottom: 3,
+  },
+  allCardSub: {
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // Drawer
+  drawer: {
     position: "absolute",
     top: 0,
     bottom: 0,
     width: "75%",
+    maxWidth: 320,
     backgroundColor: colors.bgCard,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 3, height: 0 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 10,
   },
   drawerHeader: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.sm,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     marginBottom: spacing.sm,
   },
   drawerTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
+    fontFamily: fonts.extraBold,
+    fontSize: 22,
     color: colors.textPrimary,
   },
   drawerItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.md,
+    borderRadius: radius.lg,
   },
-  drawerItemIcon: { fontSize: 20, marginRight: spacing.md },
+  drawerItemIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   drawerItemText: {
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: 16,
     color: colors.textPrimary,
   },
+
+  // Notificaciones
   notifCard: {
-    margin: spacing.md,
+    margin: spacing.sm,
     padding: spacing.md,
-    backgroundColor: colors.bgInput,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.azul.bg,
+    borderRadius: radius.xl,
   },
   notifCardText: {
-    fontFamily: fonts.medium,
-    color: colors.textPrimary,
+    fontFamily: fonts.semiBold,
+    color: colors.azul.text,
     fontSize: 14,
+    lineHeight: 20,
+  },
+  emptyNotif: {
+    alignItems: "center",
+    marginTop: 48,
+    gap: spacing.sm,
   },
   emptyNotifText: {
     fontFamily: fonts.regular,
     color: colors.textMuted,
     fontSize: 14,
     textAlign: "center",
-    marginTop: spacing.xl,
   },
 });
