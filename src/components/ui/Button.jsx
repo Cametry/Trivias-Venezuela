@@ -1,18 +1,9 @@
 // =============================================================
 //  🇻🇪 Trivias Venezuela — Componente Button Universal
-//  Efecto 3D hundirse: translateY + sombra inferior
+//  Efecto 3D hundirse: el cuerpo se mueve sobre la sombra fija
 //
-//  VARIANTES:
-//    primary   → Amarillo pastel (acción principal)
-//    secondary → Azul pastel (acción secundaria)
-//    danger    → Rojo pastel (cerrar sesión, eliminar)
-//    success   → Verde pastel (confirmar, aceptar)
-//    ghost     → Transparente con borde morado (regresar)
-//
-//  USO:
-//    <Button label="Jugar" variant="primary" onPress={() => {}} />
-//    <Button label="Regresar" variant="ghost" icon="arrow-left" onPress={navigation.goBack} />
-//    <Button label="Buscar" variant="secondary" loading={true} onPress={handleSearch} />
+//  ⚠️ NO acepta children — solo props:
+//     label, variant, onPress, icon, iconPosition, loading, disabled, fullWidth
 // =============================================================
 
 import React, { useRef } from 'react';
@@ -30,58 +21,49 @@ import colors from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 import { radius, spacing } from '../../theme/spacing';
 
-// ── Definición de variantes ───────────────────────────────────
 const VARIANTS = {
-  primary:   { bg: colors.amarillo.bg,  text: colors.amarillo.text,  shadow: colors.amarillo.dark },
-  secondary: { bg: colors.azul.bg,      text: colors.azul.text,      shadow: colors.azul.dark },
-  danger:    { bg: colors.rojo.bg,      text: colors.rojo.text,      shadow: colors.rojo.dark },
-  success:   { bg: colors.verde.bg,     text: colors.verde.text,     shadow: colors.verde.dark },
-  ghost:     { bg: 'transparent',       text: colors.morado.text,    shadow: colors.morado.bg,
-               border: colors.morado.bg, borderWidth: 2 },
+  primary:   { bg: colors.palette.amarillo.bg,  text: colors.palette.amarillo.text,  shadow: colors.palette.amarillo.dark },
+  secondary: { bg: colors.palette.azul.bg,      text: colors.palette.azul.text,      shadow: colors.palette.azul.dark },
+  danger:    { bg: colors.palette.rojo.bg,       text: colors.palette.rojo.text,      shadow: colors.palette.rojo.dark },
+  success:   { bg: colors.palette.verde.bg,      text: colors.palette.verde.text,     shadow: colors.palette.verde.dark },
+  ghost:     { bg: 'transparent',               text: colors.palette.morado.text,    shadow: colors.palette.morado.bg,
+               border: colors.palette.morado.bg, borderWidth: 2 },
 };
 
-const PRESS_DOWN   = 3;   // px que baja el botón al presionar
-const SHADOW_REST  = 4;   // px de sombra en reposo
-const ANIM_DURATION = 80; // ms de la animación
+const SHADOW_OFFSET  = 4;  // px que la sombra sobresale debajo del cuerpo
+const PRESS_DOWN     = 4;  // px que el cuerpo baja al presionar (= SHADOW_OFFSET para taparlo)
+const ANIM_DURATION  = 80;
 
 export default function Button({
   label,
   onPress,
   variant = 'primary',
-  icon,             // nombre del ícono de @expo/vector-icons Ionicons
+  icon,
   iconPosition = 'left',
   loading = false,
   disabled = false,
   fullWidth = true,
-  style,            // estilo adicional para el contenedor
+  style,
 }) {
   const pressAnim = useRef(new Animated.Value(0)).current;
   const v = VARIANTS[variant] || VARIANTS.primary;
 
-  const handlePressIn = () => {
+  const handlePressIn = () =>
     Animated.timing(pressAnim, {
-      toValue: 1,
-      duration: ANIM_DURATION,
+      toValue: 1, duration: ANIM_DURATION,
       useNativeDriver: Platform.OS !== 'web',
     }).start();
-  };
 
-  const handlePressOut = () => {
+  const handlePressOut = () =>
     Animated.timing(pressAnim, {
-      toValue: 0,
-      duration: ANIM_DURATION,
+      toValue: 0, duration: ANIM_DURATION,
       useNativeDriver: Platform.OS !== 'web',
     }).start();
-  };
 
+  // El cuerpo baja al presionar, cubriendo la sombra por completo
   const translateY = pressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, PRESS_DOWN],
-  });
-
-  const shadowHeight = pressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [SHADOW_REST, 1],
   });
 
   const isDisabled = disabled || loading;
@@ -92,20 +74,27 @@ export default function Button({
       onPressIn={isDisabled ? null : handlePressIn}
       onPressOut={isDisabled ? null : handlePressOut}
     >
+      {/*
+        Wrapper con paddingBottom = SHADOW_OFFSET para reservar espacio a la sombra.
+        La sombra es IDÉNTICA al cuerpo pero desplazada hacia abajo — así
+        tiene exactamente la misma forma redondeada que el botón.
+      */}
       <View style={[styles.wrapper, fullWidth && styles.fullWidth, style]}>
-        {/* Sombra 3D (capa inferior fija) */}
-        <Animated.View
+
+        {/* Sombra: misma forma que el cuerpo, fija en la parte baja del wrapper */}
+        <View
           style={[
             styles.shadow,
             {
               backgroundColor: v.shadow,
-              height: shadowHeight,
               borderRadius: radius.xl,
+              borderWidth: v.borderWidth || 0,
+              borderColor: v.border || 'transparent',
             },
           ]}
         />
 
-        {/* Cuerpo del botón (se mueve hacia abajo) */}
+        {/* Cuerpo: se mueve hacia abajo al presionar, tapando la sombra */}
         <Animated.View
           style={[
             styles.body,
@@ -124,27 +113,18 @@ export default function Button({
           ) : (
             <>
               {icon && iconPosition === 'left' && (
-                <Ionicons
-                  name={icon}
-                  size={18}
-                  color={v.text}
-                  style={styles.iconLeft}
-                />
+                <Ionicons name={icon} size={18} color={v.text} style={styles.iconLeft} />
               )}
               <Text style={[styles.label, { color: v.text, fontFamily: fonts.bold }]}>
                 {label}
               </Text>
               {icon && iconPosition === 'right' && (
-                <Ionicons
-                  name={icon}
-                  size={18}
-                  color={v.text}
-                  style={styles.iconRight}
-                />
+                <Ionicons name={icon} size={18} color={v.text} style={styles.iconRight} />
               )}
             </>
           )}
         </Animated.View>
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -152,18 +132,22 @@ export default function Button({
 
 const styles = StyleSheet.create({
   wrapper: {
+    // paddingBottom reserva el espacio visual de la sombra
+    paddingBottom: SHADOW_OFFSET,
     marginBottom: spacing.md,
-    position: 'relative',
   },
   fullWidth: {
     width: '100%',
   },
+
+  // La sombra ocupa todo el wrapper (incluyendo el paddingBottom)
+  // gracias a StyleSheet.absoluteFillObject + el mismo borderRadius del cuerpo
   shadow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
+    top: SHADOW_OFFSET,  // desplazada SHADOW_OFFSET px hacia abajo respecto al cuerpo
   },
+
+  // El cuerpo flota encima de la sombra; al bajar (translateY) la tapa
   body: {
     paddingVertical: 14,
     paddingHorizontal: spacing.lg,
@@ -171,14 +155,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   label: {
     fontSize: 15,
     textAlign: 'center',
   },
-  iconLeft: {
-    marginRight: 8,
-  },
-  iconRight: {
-    marginLeft: 8,
-  },
+  iconLeft:  { marginRight: 8 },
+  iconRight: { marginLeft: 8 },
 });

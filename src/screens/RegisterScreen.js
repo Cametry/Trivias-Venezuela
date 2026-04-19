@@ -1,74 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
-  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import colors, { fonts, spacing, radius } from '../theme/colors';
-
-// ── Botón 3D (mismo patrón que LoginScreen) ───────────────────
-function Button3D({ label, onPress, loading, variant = 'primary' }) {
-  const pressAnim = useRef(new Animated.Value(0)).current;
-
-  const VARIANTS = {
-    primary: {
-      bg: colors.palette.amarillo.bg,
-      text: colors.palette.amarillo.text,
-      shadow: colors.palette.amarillo.dark,
-    },
-  };
-  const v = VARIANTS[variant];
-
-  const handlePressIn = () =>
-    Animated.timing(pressAnim, {
-      toValue: 1, duration: 80,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-
-  const handlePressOut = () =>
-    Animated.timing(pressAnim, {
-      toValue: 0, duration: 80,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-
-  const translateY = pressAnim.interpolate({
-    inputRange: [0, 1], outputRange: [0, 3],
-  });
-
-  return (
-    <TouchableWithoutFeedback
-      onPress={loading ? null : onPress}
-      onPressIn={loading ? null : handlePressIn}
-      onPressOut={loading ? null : handlePressOut}
-    >
-      <View style={s.btnWrapper}>
-        <Animated.View
-          style={[
-            s.btnBody,
-            { backgroundColor: v.bg, transform: [{ translateY }], opacity: loading ? 0.7 : 1 },
-          ]}
-        >
-          {loading
-            ? <ActivityIndicator color={v.text} />
-            : <Text style={[s.btnLabel, { color: v.text }]}>{label}</Text>
-          }
-        </Animated.View>
-        <View style={[s.btnShadow, { backgroundColor: v.shadow }]} />
-      </View>
-    </TouchableWithoutFeedback>
-  );
-}
+import Button from '../components/ui/Button';
 
 // ── Input con ícono + toggle visibilidad ──────────────────────
 function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize }) {
@@ -147,7 +92,6 @@ export default function RegisterScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Header ── */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={s.backBtn}
@@ -162,7 +106,6 @@ export default function RegisterScreen({ navigation }) {
             <Text style={s.subtitle}>Únete a Trivias Venezuela</Text>
           </View>
 
-          {/* ── Error ── */}
           {!!error && (
             <View style={s.errorBox}>
               <Ionicons name="warning" size={15} color={colors.palette.rojo.text} />
@@ -170,7 +113,6 @@ export default function RegisterScreen({ navigation }) {
             </View>
           )}
 
-          {/* ── Campos ── */}
           <View style={s.inputGroup}>
             <Text style={s.label}>Nombre de usuario</Text>
             <IconInput
@@ -216,16 +158,15 @@ export default function RegisterScreen({ navigation }) {
             />
           </View>
 
-          {/* ── Botón ── */}
           <View style={{ marginTop: spacing.md }}>
-            <Button3D
+            <Button
               label="Crear cuenta"
               onPress={handleRegister}
               loading={loading}
+              variant="primary"
             />
           </View>
 
-          {/* ── Link login ── */}
           <TouchableOpacity
             onPress={() => navigation.navigate('Login')}
             style={s.link}
@@ -244,9 +185,6 @@ export default function RegisterScreen({ navigation }) {
   );
 }
 
-// =============================================================
-//  Estilos
-// =============================================================
 const s = StyleSheet.create({
   root: {
     flex: 1,
@@ -256,8 +194,6 @@ const s = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
   },
-
-  // ── Header ───────────────────────────────────────────────────
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -285,8 +221,6 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-
-  // ── Error ────────────────────────────────────────────────────
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,8 +236,6 @@ const s = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
-
-  // ── Inputs ───────────────────────────────────────────────────
   inputGroup: {
     marginBottom: spacing.md,
   },
@@ -340,34 +272,6 @@ const s = StyleSheet.create({
   eyeBtn: {
     padding: spacing.md,
   },
-
-  // ── Botón 3D ─────────────────────────────────────────────────
-  btnWrapper: {
-    width: '100%',
-    position: 'relative',
-    marginBottom: spacing.md,
-  },
-  btnBody: {
-    borderTopLeftRadius: radius.xl,     // ← esquina superior izquierda
-    borderTopRightRadius: radius.xl,    // ← esquina superior derecha
-    borderBottomLeftRadius: 0,          // ← esquina inferior izquierda
-    borderBottomRightRadius: 0,         // ← esquina inferior derecha
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  btnShadow: {
-    height: 5,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
-  },
-  btnLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 16,
-  },
-
-  // ── Link ─────────────────────────────────────────────────────
   link: {
     alignItems: 'center',
     paddingTop: spacing.md,

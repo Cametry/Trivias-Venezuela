@@ -1,80 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
   Image,
-  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import colors, { fonts, spacing, radius } from '../theme/colors';
+import Button from '../components/ui/Button';
 
-// ── Botón 3D reutilizable (inline para no depender de imports externos) ──
-function Button3D({ label, onPress, loading, variant = 'primary' }) {
-  const pressAnim = useRef(new Animated.Value(0)).current;
-
-  const VARIANTS = {
-    primary: {
-      bg: colors.palette.amarillo.bg,
-      text: colors.palette.amarillo.text,
-      shadow: colors.palette.amarillo.dark,
-    },
-  };
-  const v = VARIANTS[variant];
-
-  const handlePressIn = () =>
-    Animated.timing(pressAnim, {
-      toValue: 1, duration: 80,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-
-  const handlePressOut = () =>
-    Animated.timing(pressAnim, {
-      toValue: 0, duration: 80,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-
-  const translateY = pressAnim.interpolate({
-    inputRange: [0, 1], outputRange: [0, 3],
-  });
-  const shadowH = pressAnim.interpolate({
-    inputRange: [0, 1], outputRange: [4, 1],
-  });
-
-  return (
-    <TouchableWithoutFeedback
-      onPress={loading ? null : onPress}
-      onPressIn={loading ? null : handlePressIn}
-      onPressOut={loading ? null : handlePressOut}
-    >
-      <View style={s.btnWrapper}>
-        <Animated.View
-          style={[
-            s.btnBody,
-            { backgroundColor: v.bg, transform: [{ translateY }], opacity: loading ? 0.7 : 1 },
-          ]}
-        >
-          {loading
-            ? <ActivityIndicator color={v.text} />
-            : <Text style={[s.btnLabel, { color: v.text }]}>{label}</Text>
-          }
-        </Animated.View>
-        <View style={[s.btnShadow, { backgroundColor: v.shadow }]} />
-      </View>
-    </TouchableWithoutFeedback>
-  );
-}
-
-// ── Input con ícono ───────────────────────────────────────────────────────
+// ── Input con ícono ───────────────────────────────────────────
 function IconInput({ icon, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize }) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry);
@@ -155,7 +97,6 @@ export default function LoginScreen({ navigation }) {
                 resizeMode="contain"
               />
             </View>
-
           </View>
 
           {/* ── Tarjeta formulario ── */}
@@ -163,7 +104,6 @@ export default function LoginScreen({ navigation }) {
             <Text style={s.cardTitle}>Bienvenido de nuevo</Text>
             <Text style={s.cardSubtitle}>Inicia sesión para continuar</Text>
 
-            {/* Error */}
             {!!error && (
               <View style={s.errorBox}>
                 <Ionicons name="warning" size={15} color={colors.palette.rojo.text} />
@@ -171,7 +111,6 @@ export default function LoginScreen({ navigation }) {
               </View>
             )}
 
-            {/* Correo */}
             <View style={s.inputGroup}>
               <Text style={s.label}>Correo electrónico</Text>
               <IconInput
@@ -183,7 +122,6 @@ export default function LoginScreen({ navigation }) {
               />
             </View>
 
-            {/* Contraseña */}
             <View style={s.inputGroup}>
               <Text style={s.label}>Contraseña</Text>
               <IconInput
@@ -195,9 +133,8 @@ export default function LoginScreen({ navigation }) {
               />
             </View>
 
-            {/* Botón ingresar */}
             <View style={{ marginTop: spacing.sm }}>
-              <Button3D
+              <Button
                 label="Ingresar"
                 onPress={handleLogin}
                 loading={loading}
@@ -205,7 +142,6 @@ export default function LoginScreen({ navigation }) {
               />
             </View>
 
-            {/* Link registro */}
             <TouchableOpacity
               onPress={() => navigation.navigate('Register')}
               style={s.link}
@@ -225,9 +161,6 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-// =============================================================
-//  Estilos
-// =============================================================
 const s = StyleSheet.create({
   root: {
     flex: 1,
@@ -238,8 +171,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-
-  // ── Logo section ─────────────────────────────────────────────
   logoSection: {
     alignItems: 'center',
     marginBottom: spacing.xl,
@@ -252,41 +183,24 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.md,
-    // Sombra iOS
     shadowColor: colors.palette.amarillo.dark,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
-    // Sombra Android
     elevation: 6,
   },
   logo: {
     width: 170,
     height: 170,
   },
-  appName: {
-    fontFamily: fonts.extraBold,
-    fontSize: 24,
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  tagline: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-
-  // ── Tarjeta formulario ───────────────────────────────────────
   card: {
     backgroundColor: colors.bgCard,
     borderRadius: radius.xxl,
     padding: spacing.lg,
-    // Sombra iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
     shadowRadius: 16,
-    // Sombra Android
     elevation: 4,
   },
   cardTitle: {
@@ -301,8 +215,6 @@ const s = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.lg,
   },
-
-  // ── Error ────────────────────────────────────────────────────
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,8 +230,6 @@ const s = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
-
-  // ── Input ────────────────────────────────────────────────────
   inputGroup: {
     marginBottom: spacing.md,
   },
@@ -356,38 +266,6 @@ const s = StyleSheet.create({
   eyeBtn: {
     padding: spacing.md,
   },
-
-  // ── Botón 3D ─────────────────────────────────────────────────
-  btnWrapper: {
-    width: '100%',
-    position: 'relative',
-    marginBottom: spacing.md,
-    paddingBottom: 0,
-  },
-  btnShadow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 5,
-    borderRadius: radius.xl,
-  },
-  btnBody: {
-    borderTopLeftRadius: radius.xl,     // ← esquina superior izquierda
-    borderTopRightRadius: radius.xl,    // ← esquina superior derecha
-    borderBottomLeftRadius: 0,          // ← esquina inferior izquierda
-    borderBottomRightRadius: 0,         // ← esquina inferior derecha
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  btnLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 16,
-  },
-
-  // ── Link ─────────────────────────────────────────────────────
   link: {
     alignItems: 'center',
     paddingTop: spacing.md,
