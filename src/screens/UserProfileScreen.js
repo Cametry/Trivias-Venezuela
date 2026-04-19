@@ -3,14 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, arrayRemove } from 'firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, arrayRemove, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { colors, fonts, spacing, radius } from '../theme/colors';
+import Button from '../components/ui/Button';
 
 export default function UserProfileScreen({ route, navigation }) {
   const { userId } = route.params;
@@ -184,90 +187,93 @@ export default function UserProfileScreen({ route, navigation }) {
     }
   };
 
+  const getLevelColor = () => {
+    if (!userData?.level) return colors.level.basico;
+    const level = userData.level.toLowerCase();
+    return colors.level[level] || colors.level.basico;
+  };
+
+  const renderActionButton = () => {
+    switch (friendshipStatus) {
+      case 'loading':
+        return <Button label="Cargando..." variant="secondary" loading />;
+      case 'none':
+        return <Button label="Enviar Solicitud de Amistad" variant="primary" onPress={handleFriendAction} />;
+      case 'pending_sent':
+        return <Button label="Solicitud Enviada" variant="secondary" disabled />;
+      case 'pending_received':
+        return <Button label="Aceptar Solicitud" variant="success" onPress={handleFriendAction} />;
+      case 'friends':
+        return <Button label="Eliminar Amigo" variant="danger" onPress={handleFriendAction} />;
+      default:
+        return <Button label="Cargando..." variant="secondary" loading />;
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.amarillo} />
+        <ActivityIndicator size="large" color={colors.palette.amarillo.text} />
       </View>
     );
   }
 
+  const levelColor = getLevelColor();
+  const userInitial = userData?.name?.[0]?.toUpperCase() || '?';
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header Absoluto */}
-      <View style={styles.customHeader}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.bubbleBackButton}
+          style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.backText} numberOfLines={1}>Regresar</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.palette.azul.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Perfil</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* Cuerpo del Perfil */}
-      <View style={styles.profileBody}>
+      {/* Contenido Principal */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {userData && (
           <>
-            <View style={styles.largeAvatar}>
-              <Text style={styles.largeAvatarText}>
-                {userData.name?.[0]?.toUpperCase() || '?'}
-              </Text>
+            {/* Avatar */}
+            <View style={[styles.avatar, { backgroundColor: levelColor.bg }]}>
+              <Text style={styles.avatarText}>{userInitial}</Text>
             </View>
-            <Text style={styles.profileName}>{userData.name}</Text>
 
+            {/* Nombre */}
+            <Text style={styles.name}>{userData.name}</Text>
+
+            {/* Puntos */}
             <View style={styles.pointsContainer}>
-              <Text style={styles.pointsIcon}>🏆</Text>
-              <Text style={styles.profilePoints}>
-                {userData.points || 0} <Text style={styles.pointsLabel}>pts totales</Text>
+              <Ionicons name="trophy" size={24} color={colors.palette.amarillo.text} />
+              <Text style={styles.points}>
+                {userData.points || 0} <Text style={styles.pointsLabel}>puntos</Text>
               </Text>
             </View>
 
+            {/* Nivel */}
             {userData.level && (
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelText}>{userData.level.toUpperCase()}</Text>
+              <View style={[styles.levelBadge, { backgroundColor: levelColor.bg }]}>
+                <Text style={[styles.levelText, { color: levelColor.text }]}>
+                  {userData.level.toUpperCase()}
+                </Text>
               </View>
             )}
           </>
         )}
-      </View>
+      </ScrollView>
 
-      {/* Footer Fijo */}
-      <View style={styles.footerContainer}>
-        {friendshipStatus === 'loading' ? (
-          <View style={[styles.requestButton, { backgroundColor: colors.bgInput }]}>
-            <ActivityIndicator color={colors.amarillo} />
-          </View>
-        ) : friendshipStatus === 'none' ? (
-          <TouchableOpacity
-            style={styles.requestButton}
-            activeOpacity={0.8}
-            onPress={handleFriendAction}
-          >
-            <Text style={styles.requestButtonText}>Enviar Solicitud de Amistad</Text>
-          </TouchableOpacity>
-        ) : friendshipStatus === 'pending_sent' ? (
-          <View style={[styles.requestButton, { backgroundColor: colors.bgInput }]}>
-            <Text style={[styles.requestButtonText, { color: colors.textMuted }]}>Solicitud Enviada</Text>
-          </View>
-        ) : friendshipStatus === 'pending_received' ? (
-          <TouchableOpacity
-            style={[styles.requestButton, { backgroundColor: colors.success }]}
-            activeOpacity={0.8}
-            onPress={handleFriendAction}
-          >
-            <Text style={styles.requestButtonText}>Aceptar Solicitud</Text>
-          </TouchableOpacity>
-        ) : friendshipStatus === 'friends' ? (
-          <TouchableOpacity
-            style={[styles.requestButton, { backgroundColor: colors.error }]}
-            activeOpacity={0.8}
-            onPress={handleFriendAction}
-          >
-            <Text style={styles.requestButtonText}>Eliminar Amigo</Text>
-          </TouchableOpacity>
-        ) : null}
+      {/* Footer con Botón de Acción */}
+      <View style={styles.footer}>
+        {renderActionButton()}
       </View>
     </View>
   );
@@ -282,80 +288,84 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  customHeader: {
-    position: 'relative',
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgCard,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    shadowColor: colors.textSecondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  bubbleBackButton: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  backText: {
-    color: colors.textPrimary,
-    fontFamily: fonts.medium,
-    fontSize: 13,
+  backButton: {
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: fonts.bold,
     color: colors.textPrimary,
     textAlign: 'center',
-  },
-  profileBody: {
     flex: 1,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  content: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
   },
-  largeAvatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.azul,
+  avatar: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,
     borderWidth: 4,
-    borderColor: colors.borderLight,
-    shadowColor: colors.azul,
+    borderColor: colors.bgCard,
+    shadowColor: colors.textSecondary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     elevation: 8,
   },
-  largeAvatarText: {
-    fontSize: 48,
-    fontFamily: fonts.bold,
+  avatarText: {
+    fontSize: 56,
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
   },
-  profileName: {
+  name: {
     fontSize: 32,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   pointsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
   },
-  pointsIcon: {
-    fontSize: 24,
-    marginRight: 6,
-  },
-  profilePoints: {
-    fontSize: 26,
+  points: {
+    fontSize: 28,
     fontFamily: fonts.bold,
-    color: colors.amarillo,
+    color: colors.palette.amarillo.text,
+    marginLeft: spacing.sm,
   },
   pointsLabel: {
     fontSize: 16,
@@ -363,38 +373,27 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   levelBadge: {
-    backgroundColor: 'rgba(46, 204, 113, 0.2)', // verde claro
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(46, 204, 113, 0.4)',
-    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 2,
+    borderColor: colors.borderLight,
   },
   levelText: {
-    color: '#2ECC71',
-    fontFamily: fonts.semiBold,
     fontSize: 14,
+    fontFamily: fonts.semiBold,
     letterSpacing: 1,
   },
-  footerContainer: {
+  footer: {
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
-  },
-  requestButton: {
-    backgroundColor: colors.azul,
-    borderRadius: radius.lg,
-    paddingVertical: 16,
-    alignItems: 'center',
-    shadowColor: colors.azul,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  requestButtonText: {
-    color: colors.textPrimary,
-    fontFamily: fonts.bold,
-    fontSize: 16,
+    backgroundColor: colors.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    shadowColor: colors.textSecondary,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
