@@ -4,16 +4,30 @@ import {
   ActivityIndicator, ScrollView, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { shuffleOptions, shuffleArray } from '../utils/shuffle';
-import { colors, fonts, spacing, radius, levelColors, categoryColors } from '../theme/colors';
-import { LEVEL_LABELS, getLevelFromCorrect, LEVELS } from '../utils/levels';
-import { POINTS_PER_CORRECT } from '../utils/levels';
+import colors, { fonts, spacing, radius } from '../theme/colors';
+import { LEVEL_LABELS, getLevelFromCorrect, LEVELS, POINTS_PER_CORRECT } from '../utils/levels';
+import Button from '../components/ui/Button';
+import { Ionicons } from '@expo/vector-icons';
+import IconMapper from '../utils/IconMapper';
 
 const QUESTIONS_PER_GAME = 10;
+
+const CATEGORY_COLORS = {
+  deportes:    colors.palette.azul,
+  folklore:    colors.palette.rojo,
+  gastronomia: colors.palette.naranja,
+  geografia:   colors.palette.verde,
+  historia:    colors.palette.morado,
+  musica:      colors.palette.amarillo,
+  naturaleza:  colors.palette.verde,
+  personajes:  colors.palette.naranja,
+  tv:          colors.palette.rojo,
+  all:         colors.palette.amarillo,
+};
 
 export default function GameScreen({ route, navigation }) {
   const { category } = route.params;
@@ -134,37 +148,35 @@ export default function GameScreen({ route, navigation }) {
   }
 
   const q = questions[currentIdx];
-  const accentColor = categoryColors[category.id] || colors.amarillo;
+  const catColor = CATEGORY_COLORS[category.id] || colors.palette.amarillo;
+  const currentLevelInfo = colors.level[userLevel] || colors.level.basico;
+  const questionLevelInfo = colors.level[q.level] || colors.level.basico;
   const isLast = currentIdx + 1 >= questions.length;
-
-  const getOptionStyle = (idx) => {
-    if (!answered) return [styles.option, { borderColor: accentColor + '55' }];
-    if (idx === shuffled.correctShuffledIndex) return [styles.option, styles.optCorrect];
-    if (idx === selected && idx !== shuffled.correctShuffledIndex) return [styles.option, styles.optWrong];
-    return [styles.option, { borderColor: colors.border, opacity: 0.5 }];
-  };
 
   return (
     <View style={styles.root}>
       {/* Header: paddingTop dinámico — el fondo del header cubre el notch */}
-      <LinearGradient colors={[colors.surface, colors.bg]} style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.exitBtn}>
-          <Text style={styles.exitText}>✕</Text>
+          <Ionicons name="close" size={26} color={colors.textMuted} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.catName}>{category.icon} {category.name}</Text>
+          <View style={styles.catTitleContainer}>
+            <IconMapper iconName={category.icon} color={colors.textPrimary} size={18} />
+            <Text style={styles.catName}>{category.name}</Text>
+          </View>
           <Text style={styles.qCounter}>{currentIdx + 1} / {questions.length}</Text>
         </View>
-        <View style={[styles.levelPill, { borderColor: levelColors[userLevel] }]}>
-          <Text style={[styles.levelPillText, { color: levelColors[userLevel] }]}>{LEVEL_LABELS[userLevel]}</Text>
+        <View style={[styles.levelPill, { backgroundColor: currentLevelInfo.bg }]}>
+          <Text style={[styles.levelPillText, { color: currentLevelInfo.text }]}>{LEVEL_LABELS[userLevel]}</Text>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Progress bar */}
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, {
           width: `${((currentIdx) / questions.length) * 100}%`,
-          backgroundColor: accentColor,
+          backgroundColor: catColor.bg,
         }]} />
       </View>
 
@@ -181,8 +193,8 @@ export default function GameScreen({ route, navigation }) {
           ) : null}
 
           {/* Level badge */}
-          <View style={[styles.levelBadge, { backgroundColor: levelColors[q.level] + '25' }]}>
-            <Text style={[styles.levelBadgeText, { color: levelColors[q.level] }]}>
+          <View style={[styles.levelBadge, { backgroundColor: questionLevelInfo.bg }]}>
+            <Text style={[styles.levelBadgeText, { color: questionLevelInfo.text }]}>
               {LEVEL_LABELS[q.level]}
             </Text>
           </View>
@@ -191,27 +203,50 @@ export default function GameScreen({ route, navigation }) {
           <Text style={styles.qText}>{q.text}</Text>
 
           {/* Options */}
-          {shuffled && shuffled.shuffledOptions.map((opt, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={getOptionStyle(idx)}
-              onPress={() => handleOption(idx)}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.optLetter, { backgroundColor: accentColor + '30' }]}>
-                <Text style={[styles.optLetterText, { color: accentColor }]}>
-                  {['A', 'B', 'C', 'D'][idx]}
-                </Text>
+          {shuffled && shuffled.shuffledOptions.map((opt, idx) => {
+            let isCorrect = idx === shuffled.correctShuffledIndex;
+            let isSelected = idx === selected;
+            
+            let currentBg = colors.bgCard;
+            let currentBorder = catColor.bg;
+            let finalOpacity = answered && !isSelected && !isCorrect ? 0.5 : 1;
+
+            if (answered) {
+              if (isCorrect) currentBg = colors.palette.verde.bg;
+              else if (isSelected) currentBg = colors.palette.rojo.bg;
+            }
+
+            return (
+              <View
+                key={idx}
+                style={[styles.optionWrapper, { opacity: finalOpacity }]}
+              >
+                <View style={[styles.optionShadow, { backgroundColor: catColor.dark }]} />
+                <TouchableOpacity
+                  style={[
+                    styles.optionBody,
+                    { backgroundColor: currentBg, borderColor: currentBorder }
+                  ]}
+                  onPress={() => handleOption(idx)}
+                  activeOpacity={answered ? 1 : 0.85}
+                >
+                  <View style={[styles.optLetter, { backgroundColor: catColor.bg }]}>
+                    <Text style={[styles.optLetterText, { color: catColor.text }]}>
+                      {['A', 'B', 'C', 'D'][idx]}
+                    </Text>
+                  </View>
+                  <Text style={styles.optText}>{opt}</Text>
+                  
+                  {answered && isCorrect && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.palette.verde.text} style={styles.feedbackIcon} />
+                  )}
+                  {answered && isSelected && !isCorrect && (
+                    <Ionicons name="close-circle" size={24} color={colors.palette.rojo.text} style={styles.feedbackIcon} />
+                  )}
+                </TouchableOpacity>
               </View>
-              <Text style={styles.optText}>{opt}</Text>
-              {answered && idx === shuffled.correctShuffledIndex && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-              {answered && idx === selected && idx !== shuffled.correctShuffledIndex && (
-                <Text style={styles.cross}>✗</Text>
-              )}
-            </TouchableOpacity>
-          ))}
+            );
+          })}
 
           {/* Feedback + Next */}
           {answered && (
@@ -223,15 +258,14 @@ export default function GameScreen({ route, navigation }) {
                   ❌ Incorrecto. La respuesta era: {shuffled.shuffledOptions[shuffled.correctShuffledIndex]}
                 </Text>
               )}
-              <TouchableOpacity onPress={handleNext} style={styles.nextBtn}>
-                <LinearGradient
-                  colors={[accentColor, accentColor + 'CC']}
-                  style={styles.nextGrad}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                >
-                  <Text style={styles.nextText}>{isLast ? 'Ver Resultados →' : 'Siguiente →'}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              <Button 
+                label={isLast ? 'Ver Resultados' : 'Siguiente'} 
+                variant="primary" 
+                icon="arrow-forward-outline" 
+                iconPosition="right"
+                onPress={handleNext} 
+                fullWidth 
+              />
             </Animated.View>
           )}
         </Animated.View>
@@ -250,18 +284,19 @@ const styles = StyleSheet.create({
   backBtnText: { color: '#fff', fontFamily: fonts.bold },
 
   header: {
+    backgroundColor: colors.surface,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.md, paddingBottom: spacing.md,
   },
-  exitBtn: { padding: 8 },
-  exitText: { color: colors.textMuted, fontSize: 18, fontFamily: fonts.bold },
+  exitBtn: { padding: 4 },
   headerCenter: { alignItems: 'center' },
-  catName: { color: colors.textPrimary, fontFamily: fonts.bold, fontSize: 15 },
-  qCounter: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 12 },
-  levelPill: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 3 },
-  levelPillText: { fontFamily: fonts.semiBold, fontSize: 11 },
+  catTitleContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  catName: { color: colors.textPrimary, fontFamily: fonts.bold, fontSize: 16 },
+  qCounter: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 12, marginTop: 2 },
+  levelPill: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  levelPillText: { fontFamily: fonts.bold, fontSize: 11 },
 
-  progressBar: { height: 3, backgroundColor: colors.border },
+  progressBar: { height: 4, backgroundColor: colors.border },
   progressFill: { height: '100%', borderRadius: radius.full },
 
   scroll: { padding: spacing.md, paddingBottom: 60 },
@@ -270,31 +305,34 @@ const styles = StyleSheet.create({
 
   qImage: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: spacing.md },
 
-  levelBadge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3, marginBottom: spacing.sm },
-  levelBadgeText: { fontFamily: fonts.semiBold, fontSize: 11 },
+  levelBadge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 4, marginBottom: spacing.sm },
+  levelBadgeText: { fontFamily: fonts.bold, fontSize: 11 },
 
   qText: {
     fontFamily: fonts.bold, color: colors.textPrimary, fontSize: 20,
     lineHeight: 30, marginBottom: spacing.lg,
   },
 
-  option: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.bgCard, borderRadius: radius.md,
-    borderWidth: 1.5, padding: spacing.md, marginBottom: spacing.sm,
+  optionWrapper: {
+    paddingBottom: 4,
+    marginBottom: spacing.sm,
   },
-  optCorrect: { borderColor: colors.success, backgroundColor: colors.success + '18' },
-  optWrong: { borderColor: colors.error, backgroundColor: colors.error + '18' },
+  optionShadow: {
+    ...StyleSheet.absoluteFillObject,
+    top: 4,
+    borderRadius: radius.md,
+  },
+  optionBody: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 2, padding: spacing.md,
+  },
   optLetter: { width: 32, height: 32, borderRadius: radius.full, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
   optLetterText: { fontFamily: fonts.bold, fontSize: 14 },
-  optText: { fontFamily: fonts.medium, color: colors.textPrimary, fontSize: 15, flex: 1 },
-  checkmark: { color: colors.success, fontSize: 18, fontFamily: fonts.bold },
-  cross: { color: colors.error, fontSize: 18, fontFamily: fonts.bold },
+  optText: { fontFamily: fonts.bold, color: colors.textPrimary, fontSize: 15, flex: 1 },
+  feedbackIcon: { marginLeft: spacing.sm },
 
   feedback: { marginTop: spacing.md },
   feedbackCorrect: { fontFamily: fonts.bold, color: colors.success, fontSize: 16, marginBottom: spacing.md, textAlign: 'center' },
-  feedbackWrong: { fontFamily: fonts.medium, color: colors.error, fontSize: 14, marginBottom: spacing.md, textAlign: 'center' },
-  nextBtn: { borderRadius: radius.md, overflow: 'hidden' },
-  nextGrad: { padding: spacing.md + 2, alignItems: 'center' },
-  nextText: { fontFamily: fonts.bold, color: '#fff', fontSize: 16 },
+  feedbackWrong: { fontFamily: fonts.bold, color: colors.error, fontSize: 14, marginBottom: spacing.md, textAlign: 'center' },
 });
