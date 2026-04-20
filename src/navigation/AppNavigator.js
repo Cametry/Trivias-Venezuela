@@ -6,14 +6,12 @@ import {
   Text,
   ActivityIndicator,
   View,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
 } from "react-native";
 
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme/colors";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import FloatingTabBar from "../components/ui/FloatingTabBar";
 
 // Screens
 import CustomSplashScreen from "../screens/CustomSplashScreen";
@@ -51,111 +49,12 @@ const screenOptions = {
   cardStyle: { backgroundColor: colors.bg },
 };
 
-function TabIcon({ name, focused }) {
-  const icons = {
-    Home: focused ? "🏠" : "🏠",
-    Profile: focused ? "👤" : "👤",
-    Leaderboard: focused ? "🏆" : "🥇",
-  };
-  return <Text style={{ fontSize: 20 }}>{icons[name] || "●"}</Text>;
-}
-
-// Agregamos "layout" a las propiedades que recibimos
-function CustomBottomTabBar({
-  state,
-  descriptors,
-  navigation,
-  position,
-  layout,
-}) {
-  // Usamos el ancho real del contenedor de la app, y si por un microsegundo
-  // no está listo, usamos el ancho de la ventana como plan B.
-  const containerWidth = layout.width || Dimensions.get("window").width;
-  const TAB_WIDTH = containerWidth / state.routes.length;
-
-  // Magia de animación: Atamos el movimiento a la posición del swipe
-  const translateX = position.interpolate({
-    inputRange: state.routes.map((_, i) => i),
-    outputRange: state.routes.map((_, i) => i * TAB_WIDTH),
-  });
-
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        backgroundColor: colors.bgCard,
-        borderTopColor: colors.border,
-        borderTopWidth: 1,
-        height: 65,
-        elevation: 0,
-      }}
-    >
-      {/* 🚀 LA BARRITA ANIMADA 🚀 */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: -1,
-          width: TAB_WIDTH,
-          height: 3,
-          backgroundColor: colors.amarillo.bg,
-          transform: [{ translateX }],
-          zIndex: 10,
-        }}
-      />
-
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
-
-        const isFocused = state.index === index;
-        const color = isFocused ? colors.amarillo.text : colors.textMuted;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        return (
-          <TouchableOpacity
-            key={index}
-            onPress={onPress}
-            activeOpacity={0.8}
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            {/* Renderizamos el ícono fijo */}
-            <TabIcon name={route.name} />
-
-            {/* Renderizamos el texto */}
-            <Text
-              style={{
-                color: color,
-                fontFamily: "Inter_500Medium",
-                fontSize: 11,
-                marginTop: 4,
-              }}
-            >
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
 
 function MainTabs() {
   return (
     <Tab.Navigator
       tabBarPosition="bottom"
-      tabBar={(props) => <CustomBottomTabBar {...props} />}
+      tabBar={(props) => <FloatingTabBar {...props} />}
     >
       <Tab.Screen
         name="Home"

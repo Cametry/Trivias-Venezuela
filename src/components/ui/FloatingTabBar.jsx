@@ -1,15 +1,6 @@
-// =============================================================
-//  🇻🇪 Trivias Venezuela — Tab Bar Flotante (Pastilla)
-//  Reemplaza el custom tab bar actual en AppNavigator.js
-//
-//  INSTALACIÓN: este componente se pasa como tabBar prop
-//  en createMaterialTopTabNavigator (ver instrucciones abajo)
-// =============================================================
-
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Animated,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,22 +12,49 @@ import colors from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 import { radius, spacing } from '../../theme/spacing';
 
-// ── Configuración de tabs ─────────────────────────────────────
 const TABS = [
-  { name: 'Home',         label: 'Inicio',  icon: 'home',       iconActive: 'home' },
-  { name: 'Leaderboard', label: 'Ranking', icon: 'trophy-outline', iconActive: 'trophy' },
-  { name: 'Profile',     label: 'Perfil',  icon: 'person-outline', iconActive: 'person' },
+  { name: 'Home',        label: 'Inicio',  icon: 'home-outline',    iconActive: 'home'    },
+  { name: 'Leaderboard', label: 'Ranking', icon: 'trophy-outline',  iconActive: 'trophy'  },
+  { name: 'Profile',     label: 'Perfil',  icon: 'person-outline',  iconActive: 'person'  },
 ];
 
-export default function FloatingTabBar({ state, descriptors, navigation }) {
+export default function FloatingTabBar({ state, descriptors, navigation, position }) {
   const insets = useSafeAreaInsets();
+  const [pillWidth, setPillWidth] = useState(0);
+
+  const TAB_COUNT  = state.routes.length;
+  // Ancho real de cada tab en píxeles (se calcula una vez que onLayout dispara)
+  const tabWidth   = pillWidth > 0 ? pillWidth / TAB_COUNT : 0;
+
+  // translateX en píxeles reales — React Native no acepta porcentajes en transform
+  const translateX = position.interpolate({
+    inputRange:  state.routes.map((_, i) => i),
+    outputRange: state.routes.map((_, i) => i * tabWidth),
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={[styles.outerWrapper, { paddingBottom: insets.bottom + 8 }]}>
-      <View style={styles.pill}>
+      <View
+        style={styles.pill}
+        onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
+      >
+        {/* Indicador amarillo — solo se muestra cuando tenemos el ancho real */}
+        {pillWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.slidingIndicator,
+              {
+                width: tabWidth,
+                transform: [{ translateX }],
+              },
+            ]}
+          />
+        )}
+
         {state.routes.map((route, index) => {
           const isActive = state.index === index;
-          const tab = TABS[index] || TABS[0];
+          const tab      = TABS[index] || TABS[0];
 
           const onPress = () => {
             const event = navigation.emit({
@@ -53,20 +71,15 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
-              style={[styles.tabItem, isActive && styles.tabItemActive]}
+              style={styles.tabItem}
               activeOpacity={0.8}
             >
               <Ionicons
                 name={isActive ? tab.iconActive : tab.icon}
                 size={22}
-                color={isActive ? colors.tabBar.activeText : colors.tabBar.inactiveText}
+                color={isActive ? colors.palette.amarillo.text : colors.textMuted}
               />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isActive ? styles.tabLabelActive : styles.tabLabelInactive,
-                ]}
-              >
+              <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -85,44 +98,45 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
-    // Sin fondo — se ve el fondo de la pantalla detrás
   },
   pill: {
     flexDirection: 'row',
-    backgroundColor: colors.tabBar.bg,
+    backgroundColor: '#FFFFFF',
     borderRadius: radius.full,
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    // Sombra iOS
+    paddingHorizontal: 0,   // sin padding lateral — el indicador debe cubrir tab completo
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
-    // Sombra Android
     elevation: 8,
     width: '100%',
-    justifyContent: 'space-around',
+    overflow: 'hidden',     // el indicador no se sale de la pastilla
+  },
+  slidingIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: colors.palette.amarillo.bg,
+    borderRadius: radius.full,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: radius.full,
     gap: 4,
-  },
-  tabItemActive: {
-    backgroundColor: colors.tabBar.activeTab,
+    zIndex: 1,              // íconos y texto por encima del indicador
   },
   tabLabel: {
     fontSize: 10,
     fontFamily: fonts.bold,
   },
   tabLabelActive: {
-    color: colors.tabBar.activeText,
+    color: colors.palette.amarillo.text,
   },
   tabLabelInactive: {
-    color: colors.tabBar.inactiveText,
+    color: colors.textMuted,
   },
 });
