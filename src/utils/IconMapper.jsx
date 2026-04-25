@@ -11,6 +11,11 @@ import {
   Television,
   GridFour,
   Question,
+  GridNine,
+  Baseball,
+  GlobeHemisphereWest,
+  Tree,
+  Books,
 } from 'phosphor-react-native';
 
 // =============================================================
@@ -34,16 +39,16 @@ import {
 //
 const ICON_MAP = {
   // Categorías actuales
-  sports:   { Component: Football,               weight: 'fill' },
+  sports:   { Component: Baseball,               weight: 'bold' },
   mask:     { Component: MaskHappy,              weight: 'fill' },
   utensils: { Component: ForkKnife,              weight: 'fill' },
-  globe:    { Component: Globe,                  weight: 'fill' },
-  history:  { Component: ClockCounterClockwise,  weight: 'fill' },
+  globe:    { Component: GlobeHemisphereWest,    weight: 'fill' },
+  history:  { Component: Books,                  weight: 'fill' },
   music:    { Component: MusicNote,              weight: 'fill' },
-  leaf:     { Component: Leaf,                   weight: 'fill' },
+  leaf:     { Component: Tree,                   weight: 'fill' },
   user:     { Component: Users,                  weight: 'fill' },
   tv:       { Component: Television,             weight: 'fill' },
-  all:      { Component: GridFour,               weight: 'fill' },
+  all:      { Component: GridNine,               weight: 'fill' },
 };
 
 // ── Componente principal ──────────────────────────────────────

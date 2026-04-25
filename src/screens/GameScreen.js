@@ -13,6 +13,7 @@ import { LEVEL_LABELS, getLevelFromCorrect, LEVELS, POINTS_PER_CORRECT } from '.
 import Button from '../components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
 import IconMapper from '../utils/IconMapper';
+import ScreenBackground from '../components/ui/ScreenBackground';
 
 const QUESTIONS_PER_GAME = 10;
 
@@ -27,6 +28,19 @@ const CATEGORY_COLORS = {
   personajes:  colors.palette.naranja,
   tv:          colors.palette.rojo,
   all:         colors.palette.amarillo,
+};
+
+const BG_MAP = {
+  deportes:    require('../../assets/backgrounds/game_deportes.jpg'),
+  folklore:    require('../../assets/backgrounds/game_folklore.jpg'),
+  gastronomia: require('../../assets/backgrounds/game_gastronomia.jpg'),
+  geografia:   require('../../assets/backgrounds/game_geografia.jpg'),
+  historia:    require('../../assets/backgrounds/game_historia.jpg'),
+  musica:      require('../../assets/backgrounds/game_musica.jpg'),
+  naturaleza:  require('../../assets/backgrounds/game_naturaleza.jpg'),
+  personajes:  require('../../assets/backgrounds/game_personajes.jpg'),
+  tv:          require('../../assets/backgrounds/game_tv.jpg'),
+  all:         null,  // pendiente — usará fondo beige por ahora
 };
 
 export default function GameScreen({ route, navigation }) {
@@ -153,10 +167,12 @@ export default function GameScreen({ route, navigation }) {
   const questionLevelInfo = colors.level[q.level] || colors.level.basico;
   const isLast = currentIdx + 1 >= questions.length;
 
+  const bg = BG_MAP[category?.id] ?? null;
+
   return (
-    <View style={styles.root}>
+    <ScreenBackground backgroundSource={bg} overlayOpacity={0.15}>
       {/* Header: paddingTop dinámico — el fondo del header cubre el notch */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, marginTop: -insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.exitBtn}>
           <Ionicons name="close" size={26} color={colors.textMuted} />
         </TouchableOpacity>
@@ -192,15 +208,15 @@ export default function GameScreen({ route, navigation }) {
             <Image source={{ uri: q.imageUrl }} style={styles.qImage} resizeMode="cover" />
           ) : null}
 
-          {/* Level badge */}
-          <View style={[styles.levelBadge, { backgroundColor: questionLevelInfo.bg }]}>
-            <Text style={[styles.levelBadgeText, { color: questionLevelInfo.text }]}>
-              {LEVEL_LABELS[q.level]}
-            </Text>
+          {/* Level badge + Question */}
+          <View style={styles.questionCard}>
+            <View style={[styles.levelBadge, { backgroundColor: questionLevelInfo.bg }]}>
+              <Text style={[styles.levelBadgeText, { color: questionLevelInfo.text }]}>
+                {LEVEL_LABELS[q.level]}
+              </Text>
+            </View>
+            <Text style={styles.qText}>{q.text}</Text>
           </View>
-
-          {/* Question */}
-          <Text style={styles.qText}>{q.text}</Text>
 
           {/* Options */}
           {shuffled && shuffled.shuffledOptions.map((opt, idx) => {
@@ -270,7 +286,7 @@ export default function GameScreen({ route, navigation }) {
           )}
         </Animated.View>
       </ScrollView>
-    </View>
+    </ScreenBackground>
   );
 }
 
@@ -287,6 +303,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.md, paddingBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   exitBtn: { padding: 4 },
   headerCenter: { alignItems: 'center' },
@@ -300,17 +321,39 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', borderRadius: radius.full },
 
   scroll: { padding: spacing.md, paddingBottom: 60 },
-  scoreMini: { alignSelf: 'center', marginBottom: spacing.sm },
+  scoreMini: {
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   scoreMiniText: { color: colors.textMuted, fontFamily: fonts.medium, fontSize: 13 },
 
   qImage: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: spacing.md },
 
+  questionCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 5,
+  },
   levelBadge: { alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 4, marginBottom: spacing.sm },
   levelBadgeText: { fontFamily: fonts.bold, fontSize: 11 },
 
   qText: {
     fontFamily: fonts.bold, color: colors.textPrimary, fontSize: 20,
-    lineHeight: 30, marginBottom: spacing.lg,
+    lineHeight: 30, marginBottom: 0,
   },
 
   optionWrapper: {

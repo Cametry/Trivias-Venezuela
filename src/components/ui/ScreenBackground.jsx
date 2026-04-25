@@ -15,7 +15,7 @@
 // =============================================================
 
 import React from 'react';
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { ImageBackground, Image, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 
@@ -29,6 +29,24 @@ export default function ScreenBackground({
 
   // ── Con imagen de fondo ───────────────────────────────────────
   if (backgroundSource) {
+    // En web, ImageBackground no aplica cover correctamente.
+    // Usamos Image absolutamente posicionado: resizeMode='cover' → object-fit:cover en CSS.
+    if (Platform.OS === 'web') {
+      return (
+        <View style={[styles.bg, { overflow: 'hidden' }, style]}>
+          <Image
+            source={backgroundSource}
+            style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+            resizeMode="cover"
+          />
+          <View style={[styles.overlay, { opacity: overlayOpacity }]} />
+          <View style={[styles.content, { paddingTop: insets.top }]}>
+            {children}
+        </View>
+      </View>
+      );
+    }
+    // Móvil: ImageBackground nativo (perfecto tal cual)
     return (
       <ImageBackground
         source={backgroundSource}
